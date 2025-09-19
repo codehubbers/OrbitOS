@@ -1,0 +1,26 @@
+{
+  "name": "web-os-project",
+  "version": "1.0.0",
+  "description": "A Web OS-style project for group collaboration",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "server": "node src/server/index.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run server\""
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "concurrently": "^8.2.0"
+  }
+}
