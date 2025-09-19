@@ -1,0 +1,6 @@
+git.sh
+.ssh
+node_modules/
+.git/
+next/
+.vscode/
