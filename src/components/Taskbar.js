@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 const availableApps = [
@@ -10,6 +10,21 @@ const availableApps = [
 export default function Taskbar() {
   const { state, dispatch } = useApp();
   const [showStartMenu, setShowStartMenu] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Mark as mounted after initial render
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      const updateTime = () => setCurrentTime(new Date().toLocaleTimeString());
+      updateTime(); // Set initial time after mount
+      const interval = setInterval(updateTime, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [mounted]);
 
   const openApp = (app) => {
     dispatch({ type: 'OPEN_APP', payload: app });
@@ -63,8 +78,8 @@ export default function Taskbar() {
         ))}
       </div>
       
-      <div className="text-sm">
-        {new Date().toLocaleTimeString()}
+      <div className="text-sm" data-testid="clock">
+        {mounted ? currentTime : ''}
       </div>
     </div>
   );
