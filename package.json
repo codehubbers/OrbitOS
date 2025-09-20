@@ -14,6 +14,7 @@
     "@heroicons/react": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^4.18.0",
+    "framer-motion": "^12.23.16",
     "multer": "2.0.2",
     "next": "^14.0.0",
     "react": "^18.0.0",
@@ -33,12 +34,21 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
     },
     "transform": {
-      "^.+\\.(js|jsx)$": ["babel-jest", { "presets": ["next/babel"] }]
+      "^.+\\.(js|jsx)$": [
+        "babel-jest",
+        {
+          "presets": [
+            "next/babel"
+          ]
+        }
+      ]
     }
   }
 }

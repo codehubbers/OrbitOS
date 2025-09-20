@@ -1,22 +1,40 @@
+// src/components/AppIcon.js
 import { useApp } from '@/context/AppContext';
 
 export default function AppIcon({ app, position }) {
   const { dispatch } = useApp();
 
-  const handleDoubleClick = () => {
+  const openApp = () => {
     dispatch({ type: 'OPEN_APP', payload: app });
+    dispatch({ type: 'SET_ACTIVE_APP', payload: app.id });
   };
+
+  const isImagePath = app.icon.startsWith('/');
 
   return (
     <div
-      className="absolute flex flex-col items-center cursor-pointer select-none"
-      style={{ left: position.x, top: position.y }}
-      onDoubleClick={handleDoubleClick}
+      className="absolute flex flex-col items-center p-2 rounded-lg w-28 text-center cursor-pointer group"
+      style={{ top: position.y, left: position.x }}
+      onDoubleClick={openApp}
     >
-      <div className="w-16 h-16 bg-blue-500 rounded-lg flex items-center justify-center text-white text-2xl mb-2 hover:bg-blue-600 transition-colors">
-        {app.icon}
+      {/* Icon container with a modern shadow and hover effect */}
+      <div className="w-16 h-16 p-1 rounded-xl bg-white/20 shadow-lg transition-transform duration-150 group-hover:scale-110">
+        {isImagePath ? (
+          <img
+            src={app.icon}
+            alt={`${app.name} icon`}
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <span className="text-5xl flex items-center justify-center h-full">{app.icon}</span>
+        )}
       </div>
-      <span className="text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
+      
+      {/* Clean text with a drop shadow to make it readable on any wallpaper */}
+      <span
+        className="text-white text-sm font-medium mt-2"
+        style={{ textShadow: '0px 1px 4px rgba(0,0,0,0.7)' }}
+      >
         {app.name}
       </span>
     </div>

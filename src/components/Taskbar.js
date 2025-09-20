@@ -1,86 +1,132 @@
+// src/components/Taskbar.js
+
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import AppRegistry from '@/system/services/AppRegistry';
+import { motion } from 'framer-motion';
 
-const availableApps = [
-  { id: 'notes', name: 'Notes', icon: '📝', component: 'notes' },
-  { id: 'browser', name: 'Browser', icon: '🌐', component: 'browser' },
-  { id: 'settings', name: 'Settings', icon: '⚙️', component: 'settings' }
-];
+// --- Style Constants ---
+// Defining styles here keeps the JSX clean and makes theme changes easy.
+const taskbarStyle = "fixed bottom-0 left-0 right-0 h-16 bg-slate-900/80 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-4 z-50";
+const glassButtonStyle = "bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg hover:bg-white/20";
+const separatorStyle = "w-px h-8 bg-white/20";
+
+// --- Sub-Components for Readability ---
+
+/**
+ * A helper component to display either a PNG icon or an emoji.
+ */
+const IconDisplay = ({ icon, alt, className }) => {
+  const isImagePath = icon.startsWith('/');
+  return isImagePath
+    ? <img src={icon} alt={alt} className={className} />
+    : <span className={`flex items-center justify-center text-3xl ${className}`}>{icon}</span>;
+};
+
+/**
+ * The Start Menu icon, extracted for clarity.
+ */
+const StartIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 3H4C3.44772 3 3 3.44772 3 4V10C3 10.5523 3.44772 11 4 11H10C10.5523 11 11 10.5523 11 10V4C11 3.44772 10.5523 3 10 3Z" fill="white"></path>
+    <path d="M20 3H14C13.4477 3 13 3.44772 13 4V10C13 10.5523 13.4477 11 14 11H20C20.5523 11 21 10.5523 21 10V4C21 3.44772 20.5523 3 20 3Z" fill="white"></path>
+    <path d="M10 13H4C3.44772 13 3 13.4477 3 14V20C3 20.5523 3.44772 21 4 21H10C10.5523 21 11 20.5523 11 20V14C11 13.4477 10.5523 13 10 13Z" fill="white"></path>
+    <path d="M20 13H14C13.4477 13 13 13.4477 13 14V20C13 20.5523 13.4477 21 14 21H20C20.5523 21 21 20.5523 21 20V14C21 13.4477 20.5523 13 20 13Z" fill="white"></path>
+  </svg>
+);
+
+/**
+ * Manages the Start Button and its pop-up menu.
+ */
+const StartButtonAndMenu = ({ apps, onAppClick }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-12 h-12 flex items-center justify-center ${glassButtonStyle}`}
+        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+      >
+        <StartIcon />
+      </motion.button>
+      {isOpen && (
+        <div className="absolute bottom-16 left-0 bg-slate-800/80 backdrop-blur-lg rounded-lg shadow-lg p-2 min-w-56">
+          {apps.map(app => (
+            <button key={app.id} onClick={() => onAppClick(app)} className="w-full text-left px-3 py-2 hover:bg-white/10 rounded flex items-center space-x-3 text-white">
+              <IconDisplay icon={app.icon} alt={app.name} className="w-8 h-8" />
+              <span>{app.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Displays the icons for all currently open applications.
+ */
+const OpenAppsTray = ({ openApps, activeApp, onAppClick }) => (
+  <div className="flex items-center space-x-1">
+    {openApps.map(app => (
+      <motion.button
+        key={app.id}
+        onClick={() => onAppClick(app.id)}
+        className={`relative w-12 h-12 flex items-center justify-center ${glassButtonStyle}`}
+        whileHover={{ scale: 1.2, y: -5 }}
+        title={app.name}
+      >
+        <IconDisplay icon={app.icon} alt={app.name} className="w-10 h-10" />
+        {activeApp === app.id && <div className="absolute bottom-1 w-1.5 h-1.5 bg-white rounded-full" />}
+      </motion.button>
+    ))}
+  </div>
+);
+
+/**
+ * A self-contained, hydration-safe clock component that displays seconds.
+ */
+const Clock = () => {
+  const [time, setTime] = useState(null); // Start with null to prevent hydration mismatch
+
+  useEffect(() => {
+    const updateTime = () => setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    updateTime(); // Set time immediately on client mount
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
+  return (
+    <div className="text-white text-sm font-medium">
+      {time || ''} {/* Render empty string on server and initial client render */}
+    </div>
+  );
+};
+
+
+// --- The Main Taskbar Component ---
+// This is now much cleaner, responsible only for layout and passing data.
 
 export default function Taskbar() {
   const { state, dispatch } = useApp();
-  const [showStartMenu, setShowStartMenu] = useState(false);
-  const [currentTime, setCurrentTime] = useState('');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true); // Mark as mounted after initial render
-  }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      const updateTime = () => setCurrentTime(new Date().toLocaleTimeString());
-      updateTime(); // Set initial time after mount
-      const interval = setInterval(updateTime, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [mounted]);
+  const availableApps = AppRegistry.getAllApps();
 
   const openApp = (app) => {
     dispatch({ type: 'OPEN_APP', payload: app });
-    setShowStartMenu(false);
   };
-
   const focusApp = (appId) => {
-    const app = state.openApps.find(a => a.id === appId);
-    if (app.minimized) {
-      dispatch({ type: 'MINIMIZE_APP', payload: appId });
-    }
     dispatch({ type: 'SET_ACTIVE_APP', payload: appId });
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white h-12 flex items-center px-4 z-50">
-      <div className="relative">
-        <button
-          onClick={() => setShowStartMenu(!showStartMenu)}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium"
-        >
-          Start
-        </button>
-        {showStartMenu && (
-          <div className="absolute bottom-12 left-0 bg-gray-700 rounded-lg shadow-lg p-2 min-w-48">
-            {availableApps.map(app => (
-              <button
-                key={app.id}
-                onClick={() => openApp(app)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-600 rounded flex items-center space-x-2"
-              >
-                <span>{app.icon}</span>
-                <span>{app.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
+    <div className={taskbarStyle}>
+      <div className="flex items-center space-x-2">
+        <StartButtonAndMenu apps={availableApps} onAppClick={openApp} />
+        <div className={separatorStyle}></div>
+        <OpenAppsTray openApps={state.openApps} activeApp={state.activeApp} onAppClick={focusApp} />
       </div>
-      
-      <div className="flex-1 flex items-center space-x-2 ml-4">
-        {state.openApps.map(app => (
-          <button
-            key={app.id}
-            onClick={() => focusApp(app.id)}
-            className={`px-3 py-1 rounded text-sm ${
-              state.activeApp === app.id ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'
-            } ${app.minimized ? 'opacity-60' : ''}`}
-          >
-            {app.icon} {app.name}
-          </button>
-        ))}
-      </div>
-      
-      <div className="text-sm" data-testid="clock">
-        {mounted ? currentTime : ''}
-      </div>
+      <Clock />
     </div>
   );
 }
