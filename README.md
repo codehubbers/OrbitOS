@@ -116,8 +116,13 @@ web-os-project/
 ## Applications
 
 ### Notes App
-- Simple text editor with character count
-- Auto-saves content in component state
+- A feature-rich rich text editor with a professional, self-contained UI.
+- **Developer:** @Gordon.H
+- **Rich Text Formatting:** Includes support for headers, bold, italics, lists, and links.
+- **File System Integration:** Standalone file save (to `.html`) and load functionality using browser APIs.
+- **Advanced Editing Tools:** Features a toggleable find-and-replace panel.
+- **Dynamic UI:** A floating element displays a real-time word count, ensuring visibility regardless of window size.
+- **About Panel:** Includes an "About" modal with version and developer information.
 
 ### Browser App
 - Basic web browser with URL input
