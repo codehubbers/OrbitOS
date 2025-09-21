@@ -1,8 +1,10 @@
 // src/components/AppIcon.js
 import { useApp } from '@/context/AppContext';
+import { themes } from '@/system/themes';
 
 export default function AppIcon({ app, position }) {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
+  const currentTheme = themes[state.theme];
 
   const openApp = () => {
     dispatch({ type: 'OPEN_APP', payload: app });
@@ -18,7 +20,9 @@ export default function AppIcon({ app, position }) {
       onDoubleClick={openApp}
     >
       {/* Icon container with a modern shadow and hover effect */}
-      <div className="w-16 h-16 p-1 rounded-xl bg-white/20 shadow-lg transition-transform duration-150 group-hover:scale-110">
+      <div
+        className={`w-16 h-16 p-1 rounded-xl ${currentTheme.appIcon} shadow-lg transition-transform duration-150 group-hover:scale-110`}
+      >
         {isImagePath ? (
           <img
             src={app.icon}
@@ -26,10 +30,12 @@ export default function AppIcon({ app, position }) {
             className="w-full h-full object-contain"
           />
         ) : (
-          <span className="text-5xl flex items-center justify-center h-full">{app.icon}</span>
+          <span className="text-5xl flex items-center justify-center h-full">
+            {app.icon}
+          </span>
         )}
       </div>
-      
+
       {/* Clean text with a drop shadow to make it readable on any wallpaper */}
       <span
         className="text-white text-sm font-medium mt-2"
