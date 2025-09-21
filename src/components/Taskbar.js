@@ -98,7 +98,7 @@ const Clock = () => {
   }, []);
 
   return (
-    <div className="text-white text-sm font-medium">
+    <div className="text-white text-sm font-medium" data-testid="clock">
       {time || ''} {/* Render empty string on server and initial client render */}
     </div>
   );

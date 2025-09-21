@@ -38,7 +38,8 @@
       "<rootDir>/tests/setup.js"
     ],
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "^framer-motion$": "<rootDir>/tests/__mocks__/framer-motion.js"
     },
     "transform": {
       "^.+\\.(js|jsx)$": [
