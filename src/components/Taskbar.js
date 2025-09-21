@@ -1,6 +1,6 @@
 // src/components/Taskbar.js
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import AppRegistry from '@/system/services/AppRegistry';
 import { motion } from 'framer-motion';
@@ -85,21 +85,212 @@ const OpenAppsTray = ({ openApps, activeApp, onAppClick }) => (
 );
 
 /**
- * A self-contained, hydration-safe clock component that displays seconds.
+ * A self-contained, hydration-safe clock component with calendar popup.
  */
 const Clock = () => {
-  const [time, setTime] = useState(null); // Start with null to prevent hydration mismatch
+  const [time, setTime] = useState(null);
+  const [date, setDate] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const calendarRef = useRef(null);
+  const yearListRef = useRef(null);
 
   useEffect(() => {
-    const updateTime = () => setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    updateTime(); // Set time immediately on client mount
+    const updateTime = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setDate(now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }));
+    };
+    updateTime();
     const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setShowCalendar(false);
+        setShowYearPicker(false);
+        setShowMonthPicker(false);
+      }
+    };
+    if (showCalendar) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCalendar]);
+
+  useEffect(() => {
+    if (showYearPicker && yearListRef.current) {
+      const currentYear = new Date().getFullYear();
+      const yearElement = yearListRef.current.querySelector(`[data-year="${currentYear}"]`);
+      if (yearElement) {
+        yearElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [showYearPicker]);
+
+  const generateCalendar = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const today = now.getDate();
+    
+    const firstDay = new Date(selectedYear, selectedMonth, 1).getDay();
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    
+    const days = [];
+    
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="w-8 h-8"></div>);
+    }
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isToday = day === today && selectedMonth === currentMonth && selectedYear === currentYear;
+      days.push(
+        <div key={day} className={`w-8 h-8 flex items-center justify-center text-sm rounded ${
+          isToday ? 'bg-blue-400 text-white' : 'text-white hover:bg-white/10'
+        }`}>
+          {day}
+        </div>
+      );
+    }
+    
+    return days;
+  };
+
+  const generateYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = 1960; year <= currentYear + 2; year++) {
+      years.push(
+        <div
+          key={year}
+          data-year={year}
+          onClick={() => {
+            setSelectedYear(year);
+            setShowYearPicker(false);
+            setShowMonthPicker(true);
+          }}
+          className={`px-3 py-2 text-center cursor-pointer rounded ${
+            year === currentYear ? 'bg-blue-400 text-white' : 'text-white hover:bg-white/10'
+          }`}
+        >
+          {year}
+        </div>
+      );
+    }
+    return years;
+  };
+
+  const generateMonths = () => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    
+    return months.map((month, index) => {
+      const isCurrentMonth = index === currentMonth && selectedYear === currentYear;
+      return (
+        <div
+          key={index}
+          onClick={() => {
+            setSelectedMonth(index);
+            setShowMonthPicker(false);
+          }}
+          className={`px-3 py-2 text-center cursor-pointer rounded ${
+            isCurrentMonth ? 'bg-blue-400 text-white' : 'text-white hover:bg-white/10'
+          }`}
+        >
+          {month}
+        </div>
+      );
+    });
+  };
+
   return (
-    <div className="text-white text-sm font-medium">
-      {time || ''} {/* Render empty string on server and initial client render */}
+    <div className="relative" ref={calendarRef}>
+      <motion.button
+        onClick={() => {
+          setShowCalendar(!showCalendar);
+          setShowYearPicker(false);
+          setShowMonthPicker(false);
+        }}
+        className="text-white text-sm font-medium hover:bg-white/10 px-2 py-1 rounded transition-colors"
+        data-testid="clock"
+        whileHover={{ scale: 1.05 }}
+      >
+        <div className="text-right">
+          <div>{time || ''}</div>
+          <div className="text-xs opacity-80">{date || ''}</div>
+        </div>
+      </motion.button>
+      
+      {showCalendar && (
+        <div className="absolute bottom-16 right-0 space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-slate-800/90 backdrop-blur-lg rounded-lg shadow-xl p-4 min-w-64 text-center"
+          >
+            <div className="text-white text-2xl font-mono font-bold">{time || ''}</div>
+            <div className="text-gray-300 text-sm">{date || ''}</div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-slate-800/90 backdrop-blur-lg rounded-lg shadow-xl p-4 min-w-64"
+          >
+          {showYearPicker ? (
+            <div className="h-64">
+              <div className="text-white text-center mb-3 font-medium">
+                Select Year
+              </div>
+              <div ref={yearListRef} className="h-48 overflow-y-auto space-y-1">
+                {generateYears()}
+              </div>
+            </div>
+          ) : showMonthPicker ? (
+            <div className="h-64">
+              <div className="text-white text-center mb-3 font-medium">
+                Select Month - {selectedYear}
+              </div>
+              <div className="grid grid-cols-3 gap-2 h-48 overflow-y-auto">
+                {generateMonths()}
+              </div>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  setSelectedYear(new Date().getFullYear());
+                  setShowYearPicker(true);
+                }}
+                className="text-white text-center mb-3 font-medium w-full hover:bg-white/10 rounded px-2 py-1"
+              >
+                {new Date(selectedYear, selectedMonth).toLocaleDateString([], { month: 'long', year: 'numeric' })}
+              </button>
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                  <div key={day} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400 font-medium">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {generateCalendar()}
+              </div>
+            </>
+          )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
