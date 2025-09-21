@@ -8,7 +8,7 @@ class MockDatabase {
 
   async connect() {
     // Simulate connection delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     this.connected = true;
     console.log('Mock database connected');
     return this;

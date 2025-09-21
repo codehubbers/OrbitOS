@@ -4,17 +4,17 @@ export default function SettingsApp() {
   const [settings, setSettings] = useState({
     theme: 'light',
     notifications: true,
-    autoSave: false
+    autoSave: false,
   });
 
   const handleSettingChange = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
     <div className="h-full p-4">
       <h2 className="text-xl font-bold mb-4">System Settings</h2>
-      
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <label className="font-medium">Theme</label>
@@ -34,7 +34,9 @@ export default function SettingsApp() {
           <input
             type="checkbox"
             checked={settings.notifications}
-            onChange={(e) => handleSettingChange('notifications', e.target.checked)}
+            onChange={(e) =>
+              handleSettingChange('notifications', e.target.checked)
+            }
             className="w-4 h-4"
           />
         </div>

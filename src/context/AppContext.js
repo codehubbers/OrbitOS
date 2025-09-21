@@ -5,49 +5,58 @@ const AppContext = createContext();
 const initialState = {
   openApps: [],
   activeApp: null,
-  nextZIndex: 1000
+  nextZIndex: 1000,
 };
 
 function appReducer(state, action) {
   switch (action.type) {
     case 'OPEN_APP':
-      if (state.openApps.find(app => app.id === action.payload.id)) {
+      if (state.openApps.find((app) => app.id === action.payload.id)) {
         return {
           ...state,
           activeApp: action.payload.id,
-          openApps: state.openApps.map(app =>
-            app.id === action.payload.id ? { ...app, zIndex: state.nextZIndex } : app
+          openApps: state.openApps.map((app) =>
+            app.id === action.payload.id
+              ? { ...app, zIndex: state.nextZIndex }
+              : app,
           ),
-          nextZIndex: state.nextZIndex + 1
+          nextZIndex: state.nextZIndex + 1,
         };
       }
       return {
         ...state,
-        openApps: [...state.openApps, { ...action.payload, zIndex: state.nextZIndex }],
+        openApps: [
+          ...state.openApps,
+          { ...action.payload, zIndex: state.nextZIndex },
+        ],
         activeApp: action.payload.id,
-        nextZIndex: state.nextZIndex + 1
+        nextZIndex: state.nextZIndex + 1,
       };
     case 'CLOSE_APP':
       return {
         ...state,
-        openApps: state.openApps.filter(app => app.id !== action.payload),
-        activeApp: state.activeApp === action.payload ? null : state.activeApp
+        openApps: state.openApps.filter((app) => app.id !== action.payload),
+        activeApp: state.activeApp === action.payload ? null : state.activeApp,
       };
     case 'SET_ACTIVE_APP':
       return {
         ...state,
         activeApp: action.payload,
-        openApps: state.openApps.map(app =>
-          app.id === action.payload ? { ...app, zIndex: state.nextZIndex } : app
+        openApps: state.openApps.map((app) =>
+          app.id === action.payload
+            ? { ...app, zIndex: state.nextZIndex }
+            : app,
         ),
-        nextZIndex: state.nextZIndex + 1
+        nextZIndex: state.nextZIndex + 1,
       };
     case 'MINIMIZE_APP':
       return {
         ...state,
-        openApps: state.openApps.map(app =>
-          app.id === action.payload ? { ...app, minimized: !app.minimized } : app
-        )
+        openApps: state.openApps.map((app) =>
+          app.id === action.payload
+            ? { ...app, minimized: !app.minimized }
+            : app,
+        ),
       };
     default:
       return state;

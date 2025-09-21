@@ -3,7 +3,10 @@ import { useApp } from '@/context/AppContext';
 
 export default function Window({ app, children }) {
   const { dispatch } = useApp();
-  const [position, setPosition] = useState({ x: 100 + Math.random() * 200, y: 100 + Math.random() * 100 });
+  const [position, setPosition] = useState({
+    x: 100 + Math.random() * 200,
+    y: 100 + Math.random() * 100,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ startX: 0, startY: 0 });
 
@@ -11,7 +14,7 @@ export default function Window({ app, children }) {
     setIsDragging(true);
     dragRef.current = {
       startX: e.clientX - position.x,
-      startY: e.clientY - position.y
+      startY: e.clientY - position.y,
     };
     dispatch({ type: 'SET_ACTIVE_APP', payload: app.id });
   };
@@ -20,7 +23,7 @@ export default function Window({ app, children }) {
     if (!isDragging) return;
     setPosition({
       x: e.clientX - dragRef.current.startX,
-      y: e.clientY - dragRef.current.startY
+      y: e.clientY - dragRef.current.startY,
     });
   };
 
@@ -46,7 +49,7 @@ export default function Window({ app, children }) {
         top: position.y,
         width: 600,
         height: 400,
-        zIndex: app.zIndex
+        zIndex: app.zIndex,
       }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -68,9 +71,7 @@ export default function Window({ app, children }) {
           />
         </div>
       </div>
-      <div className="p-4 h-full overflow-auto">
-        {children}
-      </div>
+      <div className="p-4 h-full overflow-auto">{children}</div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useApp } from '@/context/AppContext';
 const availableApps = [
   { id: 'notes', name: 'Notes', icon: '📝', component: 'notes' },
   { id: 'browser', name: 'Browser', icon: '🌐', component: 'browser' },
-  { id: 'settings', name: 'Settings', icon: '⚙️', component: 'settings' }
+  { id: 'settings', name: 'Settings', icon: '⚙️', component: 'settings' },
 ];
 
 export default function Taskbar() {
@@ -32,7 +32,7 @@ export default function Taskbar() {
   };
 
   const focusApp = (appId) => {
-    const app = state.openApps.find(a => a.id === appId);
+    const app = state.openApps.find((a) => a.id === appId);
     if (app.minimized) {
       dispatch({ type: 'MINIMIZE_APP', payload: appId });
     }
@@ -50,7 +50,7 @@ export default function Taskbar() {
         </button>
         {showStartMenu && (
           <div className="absolute bottom-12 left-0 bg-gray-700 rounded-lg shadow-lg p-2 min-w-48">
-            {availableApps.map(app => (
+            {availableApps.map((app) => (
               <button
                 key={app.id}
                 onClick={() => openApp(app)}
@@ -63,21 +63,23 @@ export default function Taskbar() {
           </div>
         )}
       </div>
-      
+
       <div className="flex-1 flex items-center space-x-2 ml-4">
-        {state.openApps.map(app => (
+        {state.openApps.map((app) => (
           <button
             key={app.id}
             onClick={() => focusApp(app.id)}
             className={`px-3 py-1 rounded text-sm ${
-              state.activeApp === app.id ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'
+              state.activeApp === app.id
+                ? 'bg-gray-600'
+                : 'bg-gray-700 hover:bg-gray-600'
             } ${app.minimized ? 'opacity-60' : ''}`}
           >
             {app.icon} {app.name}
           </button>
         ))}
       </div>
-      
+
       <div className="text-sm" data-testid="clock">
         {mounted ? currentTime : ''}
       </div>

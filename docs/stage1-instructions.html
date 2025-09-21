@@ -1,305 +1,388 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web OS Project - Stage 1 Group Instructions</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px; }
-        .person-card { background: #f8f9fa; border-left: 5px solid #007bff; padding: 20px; margin: 15px 0; border-radius: 5px; }
-        .maintainer { border-left-color: #28a745; background: #d4edda; }
-        .task-list { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin: 10px 0; }
-        .code-block { background: #f4f4f4; padding: 15px; border-radius: 5px; font-family: monospace; margin: 10px 0; overflow-x: auto; }
-        .timeline { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .success-criteria { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; }
-        .workflow { background: #e2e3e5; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        h1, h2 { color: #333; }
-        h3 { color: #007bff; }
-        .emoji { font-size: 1.2em; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #f8f9fa; font-weight: bold; }
-        .status-pending { color: #ffc107; font-weight: bold; }
-        .status-pass { color: #28a745; font-weight: bold; }
-        .status-fail { color: #dc3545; font-weight: bold; }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .person-card {
+        background: #f8f9fa;
+        border-left: 5px solid #007bff;
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 5px;
+      }
+      .maintainer {
+        border-left-color: #28a745;
+        background: #d4edda;
+      }
+      .task-list {
+        background: white;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .code-block {
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+        overflow-x: auto;
+      }
+      .timeline {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .success-criteria {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      .workflow {
+        background: #e2e3e5;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      h3 {
+        color: #007bff;
+      }
+      .emoji {
+        font-size: 1.2em;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background: #f8f9fa;
+        font-weight: bold;
+      }
+      .status-pending {
+        color: #ffc107;
+        font-weight: bold;
+      }
+      .status-pass {
+        color: #28a745;
+        font-weight: bold;
+      }
+      .status-fail {
+        color: #dc3545;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <h1>🚀 Web OS Project - Stage 1 Group Instructions</h1>
-        <p>Enhance the basic Web OS with essential features and prepare for group collaboration</p>
+      <h1>🚀 Web OS Project - Stage 1 Group Instructions</h1>
+      <p>
+        Enhance the basic Web OS with essential features and prepare for group
+        collaboration
+      </p>
     </div>
 
     <div class="timeline">
-        <h2>⏰ Timeline & Objective</h2>
-        <p><strong>Duration:</strong> 3 weeks from start date</p>
-        <p><strong>Objective:</strong> Add 7 new applications and enhance existing functionality</p>
-        <ul>
-            <li><strong>Week 1:</strong> Setup and initial development</li>
-            <li><strong>Week 2:</strong> Feature completion and testing</li>
-            <li><strong>Week 3:</strong> Integration and bug fixes</li>
-        </ul>
+      <h2>⏰ Timeline & Objective</h2>
+      <p><strong>Duration:</strong> 3 weeks from start date</p>
+      <p>
+        <strong>Objective:</strong> Add 7 new applications and enhance existing
+        functionality
+      </p>
+      <ul>
+        <li><strong>Week 1:</strong> Setup and initial development</li>
+        <li><strong>Week 2:</strong> Feature completion and testing</li>
+        <li><strong>Week 3:</strong> Integration and bug fixes</li>
+      </ul>
     </div>
 
     <h2>👥 Team Roles & Assignments</h2>
 
     <div class="person-card maintainer">
-        <h3>@dailker (You) - 🛠️ Project Maintainer & Tester</h3>
-        <div class="task-list">
-            <h4>Primary Responsibilities:</h4>
-            <ul>
-                <li>Review and merge all pull requests</li>
-                <li>Test each feature before integration</li>
-                <li>Maintain project documentation</li>
-                <li>Coordinate team communication</li>
-                <li>Set database and implement to features other persons implemented</li>
-                <li><strong>Generate HTML test reports for all features</strong></li>
-            </ul>
-        </div>
+      <h3>@dailker (You) - 🛠️ Project Maintainer & Tester</h3>
+      <div class="task-list">
+        <h4>Primary Responsibilities:</h4>
+        <ul>
+          <li>Review and merge all pull requests</li>
+          <li>Test each feature before integration</li>
+          <li>Maintain project documentation</li>
+          <li>Coordinate team communication</li>
+          <li>
+            Set database and implement to features other persons implemented
+          </li>
+          <li><strong>Generate HTML test reports for all features</strong></li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>@Coder- 🔐 Authentication System</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>Login window component (<code>src/pages/apps/login.js</code>)</li>
-                <li>User authentication context (<code>src/context/AuthContext.js</code>)</li>
-                <li>Login/logout buttons in taskbar</li>
-                <li>Session persistence with localStorage</li>
-            </ul>
-        </div>
+      <h3>@Coder- 🔐 Authentication System</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>Login window component (<code>src/pages/apps/login.js</code>)</li>
+          <li>
+            User authentication context
+            (<code>src/context/AuthContext.js</code>)
+          </li>
+          <li>Login/logout buttons in taskbar</li>
+          <li>Session persistence with localStorage</li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>@atharv - 📁 File Manager App</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>File Manager app (<code>src/pages/apps/filemanager.js</code>)</li>
-                <li>File upload/download functionality</li>
-                <li>Folder navigation interface</li>
-                <li>Integration with backend <code>/api/files</code></li>
-            </ul>
-        </div>
+      <h3>@atharv - 📁 File Manager App</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>File Manager app (<code>src/pages/apps/filemanager.js</code>)</li>
+          <li>File upload/download functionality</li>
+          <li>Folder navigation interface</li>
+          <li>Integration with backend <code>/api/files</code></li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>@ethical-buddy - 🧮 Calculator App</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>Calculator app (<code>src/pages/apps/calculator.js</code>)</li>
-                <li>Basic arithmetic operations (+, -, ×, ÷)</li>
-                <li>Memory functions (MC, MR, M+, M-)</li>
-                <li>Keyboard input support</li>
-            </ul>
-        </div>
+      <h3>@ethical-buddy - 🧮 Calculator App</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>Calculator app (<code>src/pages/apps/calculator.js</code>)</li>
+          <li>Basic arithmetic operations (+, -, ×, ÷)</li>
+          <li>Memory functions (MC, MR, M+, M-)</li>
+          <li>Keyboard input support</li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>@Gordon.H - 📝 Text Editor Enhancement</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>Enhanced Notes app with rich text features</li>
-                <li>File save/load functionality</li>
-                <li>Find and replace feature</li>
-                <li>Word count and basic formatting</li>
-            </ul>
-        </div>
+      <h3>@Gordon.H - 📝 Text Editor Enhancement</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>Enhanced Notes app with rich text features</li>
+          <li>File save/load functionality</li>
+          <li>Find and replace feature</li>
+          <li>Word count and basic formatting</li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>Ismail Bin Mujeeb - 📊 System Monitor App</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>System Monitor app (<code>src/pages/apps/monitor.js</code>)</li>
-                <li>Display fake system stats (CPU, RAM, Storage)</li>
-                <li>Real-time clock and date</li>
-                <li>Running processes list (open apps)</li>
-            </ul>
-        </div>
+      <h3>Ismail Bin Mujeeb - 📊 System Monitor App</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>System Monitor app (<code>src/pages/apps/monitor.js</code>)</li>
+          <li>Display fake system stats (CPU, RAM, Storage)</li>
+          <li>Real-time clock and date</li>
+          <li>Running processes list (open apps)</li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>@Sixhill - 🪟 Window Management Enhancement</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>Window resize functionality</li>
-                <li>Window maximize/restore feature</li>
-                <li>Snap-to-edge window positioning</li>
-                <li>Alt+Tab window switching</li>
-            </ul>
-        </div>
+      <h3>@Sixhill - 🪟 Window Management Enhancement</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>Window resize functionality</li>
+          <li>Window maximize/restore feature</li>
+          <li>Snap-to-edge window positioning</li>
+          <li>Alt+Tab window switching</li>
+        </ul>
+      </div>
     </div>
 
     <div class="person-card">
-        <h3>@Junaid Khan - 🔧 Backend API Enhancement</h3>
-        <div class="task-list">
-            <h4>Deliverables:</h4>
-            <ul>
-                <li>User sessions management</li>
-                <li>File metadata storage</li>
-                <li>API rate limiting</li>
-                <li>Error logging system</li>
-            </ul>
-        </div>
+      <h3>@Junaid Khan - 🔧 Backend API Enhancement</h3>
+      <div class="task-list">
+        <h4>Deliverables:</h4>
+        <ul>
+          <li>User sessions management</li>
+          <li>File metadata storage</li>
+          <li>API rate limiting</li>
+          <li>Error logging system</li>
+        </ul>
+      </div>
     </div>
 
     <div class="workflow">
-        <h2>🔄 Development Workflow</h2>
-        
-        <h3>For Developers (Person 2-8):</h3>
-        <div class="code-block">
-# 1. Setup
-git clone codehubbers
-cd web-os-project
-npm install
-git checkout -b feature/your-task
+      <h2>🔄 Development Workflow</h2>
 
-# 2. Development
-# Code your feature, test with: npm run dev:all
+      <h3>For Developers (Person 2-8):</h3>
+      <div class="code-block">
+        # 1. Setup git clone codehubbers cd web-os-project npm install git
+        checkout -b feature/your-task # 2. Development # Code your feature, test
+        with: npm run dev:all # 3. Submit git add . git commit -m "feat: add
+        [feature name]" git push origin feature/your-task # Create Pull Request
+      </div>
 
-# 3. Submit
-git add .
-git commit -m "feat: add [feature name]"
-git push origin feature/your-task
-# Create Pull Request
-        </div>
-
-        <h3>Branch Names:</h3>
-        <ul>
-            <li><code>feature/authentication</code></li>
-            <li><code>feature/file-manager</code></li>
-            <li><code>feature/calculator</code></li>
-            <li><code>feature/text-editor</code></li>
-            <li><code>feature/system-monitor</code></li>
-            <li><code>feature/window-management</code></li>
-            <li><code>feature/backend-enhancement</code></li>
-        </ul>
+      <h3>Branch Names:</h3>
+      <ul>
+        <li><code>feature/authentication</code></li>
+        <li><code>feature/file-manager</code></li>
+        <li><code>feature/calculator</code></li>
+        <li><code>feature/text-editor</code></li>
+        <li><code>feature/system-monitor</code></li>
+        <li><code>feature/window-management</code></li>
+        <li><code>feature/backend-enhancement</code></li>
+      </ul>
     </div>
 
     <div class="workflow">
-        <h2>📋 Code Standards</h2>
-        <ul>
-            <li>Use JavaScript (no TypeScript)</li>
-            <li>Follow existing component structure</li>
-            <li>Use Tailwind CSS for styling</li>
-            <li>Keep components under 200 lines</li>
-            <li>Add proper error handling</li>
-        </ul>
+      <h2>📋 Code Standards</h2>
+      <ul>
+        <li>Use JavaScript (no TypeScript)</li>
+        <li>Follow existing component structure</li>
+        <li>Use Tailwind CSS for styling</li>
+        <li>Keep components under 200 lines</li>
+        <li>Add proper error handling</li>
+      </ul>
 
-        <h3>Integration Steps:</h3>
-        <ol>
-            <li>Add your app to <code>desktopApps</code> array in <code>Desktop.js</code></li>
-            <li>Register component in <code>appComponents</code> object</li>
-            <li>Update README with your feature</li>
-        </ol>
+      <h3>Integration Steps:</h3>
+      <ol>
+        <li>
+          Add your app to <code>desktopApps</code> array in
+          <code>Desktop.js</code>
+        </li>
+        <li>Register component in <code>appComponents</code> object</li>
+        <li>Update README with your feature</li>
+      </ol>
     </div>
 
     <div class="success-criteria">
-        <h2>🎯 Success Criteria</h2>
-        <ul>
-            <li>✅ All 7 new features implemented and working</li>
-            <li>✅ No breaking changes to existing functionality</li>
-            <li>✅ Clean, documented code</li>
-            <li>✅ Successful integration testing</li>
-            <li>✅ Complete HTML test report</li>
-        </ul>
+      <h2>🎯 Success Criteria</h2>
+      <ul>
+        <li>✅ All 7 new features implemented and working</li>
+        <li>✅ No breaking changes to existing functionality</li>
+        <li>✅ Clean, documented code</li>
+        <li>✅ Successful integration testing</li>
+        <li>✅ Complete HTML test report</li>
+      </ul>
     </div>
 
     <h2>📊 Test Report Template (For Person 1)</h2>
     <table>
-        <thead>
-            <tr>
-                <th>Feature</th>
-                <th>Developer</th>
-                <th>Status</th>
-                <th>Test Results</th>
-                <th>Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Authentication System</td>
-                <td>Person 2</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>Login/logout functionality</td>
-            </tr>
-            <tr>
-                <td>File Manager</td>
-                <td>Person 3</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>File operations and navigation</td>
-            </tr>
-            <tr>
-                <td>Calculator</td>
-                <td>Person 4</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>Arithmetic and memory functions</td>
-            </tr>
-            <tr>
-                <td>Text Editor</td>
-                <td>Person 5</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>Rich text and file operations</td>
-            </tr>
-            <tr>
-                <td>System Monitor</td>
-                <td>Person 6</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>System stats and process list</td>
-            </tr>
-            <tr>
-                <td>Window Management</td>
-                <td>Person 7</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>Resize, maximize, snap features</td>
-            </tr>
-            <tr>
-                <td>Backend Enhancement</td>
-                <td>Person 8</td>
-                <td class="status-pending">Pending</td>
-                <td>-</td>
-                <td>Sessions, logging, rate limiting</td>
-            </tr>
-        </tbody>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Developer</th>
+          <th>Status</th>
+          <th>Test Results</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Authentication System</td>
+          <td>Person 2</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>Login/logout functionality</td>
+        </tr>
+        <tr>
+          <td>File Manager</td>
+          <td>Person 3</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>File operations and navigation</td>
+        </tr>
+        <tr>
+          <td>Calculator</td>
+          <td>Person 4</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>Arithmetic and memory functions</td>
+        </tr>
+        <tr>
+          <td>Text Editor</td>
+          <td>Person 5</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>Rich text and file operations</td>
+        </tr>
+        <tr>
+          <td>System Monitor</td>
+          <td>Person 6</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>System stats and process list</td>
+        </tr>
+        <tr>
+          <td>Window Management</td>
+          <td>Person 7</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>Resize, maximize, snap features</td>
+        </tr>
+        <tr>
+          <td>Backend Enhancement</td>
+          <td>Person 8</td>
+          <td class="status-pending">Pending</td>
+          <td>-</td>
+          <td>Sessions, logging, rate limiting</td>
+        </tr>
+      </tbody>
     </table>
 
     <div class="workflow">
-        <h2>🚀 Getting Started</h2>
-        <p><strong>Each person should:</strong></p>
-        <ol>
-            <li>Read through your assigned task above</li>
-            <li>Clone the repository and create your feature branch</li>
-            <li>Start development on your assigned feature</li>
-            <li>Test your changes locally</li>
-            <li>Submit pull request when ready</li>
-        </ol>
-        
-        <p><strong>Person 1 (Maintainer) should:</strong></p>
-        <ol>
-            <li>Set up the main repository</li>
-            <li>Share repository access with all team members</li>
-            <li>Monitor pull requests and provide feedback</li>
-            <li>Update the test report as features are completed</li>
-        </ol>
+      <h2>🚀 Getting Started</h2>
+      <p><strong>Each person should:</strong></p>
+      <ol>
+        <li>Read through your assigned task above</li>
+        <li>Clone the repository and create your feature branch</li>
+        <li>Start development on your assigned feature</li>
+        <li>Test your changes locally</li>
+        <li>Submit pull request when ready</li>
+      </ol>
+
+      <p><strong>Person 1 (Maintainer) should:</strong></p>
+      <ol>
+        <li>Set up the main repository</li>
+        <li>Share repository access with all team members</li>
+        <li>Monitor pull requests and provide feedback</li>
+        <li>Update the test report as features are completed</li>
+      </ol>
     </div>
 
-    <div class="header" style="margin-top: 40px;">
-        <h2>📞 Communication</h2>
-        <p>Stay in touch through your preferred team communication channel</p>
-        <p><strong>Questions?</strong> Contact Person 1 (Project Maintainer)</p>
+    <div class="header" style="margin-top: 40px">
+      <h2>📞 Communication</h2>
+      <p>Stay in touch through your preferred team communication channel</p>
+      <p><strong>Questions?</strong> Contact Person 1 (Project Maintainer)</p>
     </div>
-</body>
+  </body>
 </html>

@@ -4,7 +4,7 @@ const router = express.Router();
 // Mock user data
 let users = [
   { id: 1, username: 'admin', email: 'admin@webos.com' },
-  { id: 2, username: 'user1', email: 'user1@webos.com' }
+  { id: 2, username: 'user1', email: 'user1@webos.com' },
 ];
 
 // GET /api/users - Get all users
@@ -15,17 +15,19 @@ router.get('/', (req, res) => {
 // POST /api/users/register - Register new user
 router.post('/register', (req, res) => {
   const { username, email, password } = req.body;
-  
+
   if (!username || !email || !password) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
+    return res
+      .status(400)
+      .json({ success: false, message: 'Missing required fields' });
   }
 
   const newUser = {
     id: users.length + 1,
     username,
-    email
+    email,
   };
-  
+
   users.push(newUser);
   res.json({ success: true, user: newUser });
 });
@@ -33,12 +35,14 @@ router.post('/register', (req, res) => {
 // POST /api/users/login - User login
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
-  
-  const user = users.find(u => u.username === username);
+
+  const user = users.find((u) => u.username === username);
   if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    return res
+      .status(401)
+      .json({ success: false, message: 'Invalid credentials' });
   }
-  
+
   res.json({ success: true, user, token: 'mock-jwt-token' });
 });
 

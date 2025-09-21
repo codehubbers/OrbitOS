@@ -57,12 +57,14 @@ web-os-project/
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/codehubbers/OrbitOS
    cd OrbitOS
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -70,18 +72,21 @@ web-os-project/
 3. **Start the development servers**
 
    **Option 1: Run both servers simultaneously**
+
    ```bash
    npm run dev:all
    ```
 
    **Option 2: Run servers separately**
-   
+
    Terminal 1 (Frontend):
+
    ```bash
    npm run dev
    ```
-   
+
    Terminal 2 (Backend):
+
    ```bash
    npm run server
    ```
@@ -101,21 +106,25 @@ web-os-project/
 ## API Endpoints
 
 ### Users
+
 - `GET /api/users` - Get all users
 - `POST /api/users/register` - Register new user
 - `POST /api/users/login` - User login
 
 ### Files
+
 - `GET /api/files` - List all files
 - `POST /api/files/upload` - Upload file
 - `DELETE /api/files/:id` - Delete file
 
 ### Health Check
+
 - `GET /api/health` - Server health status
 
 ## Applications
 
 ### Notes App
+
 - A feature-rich rich text editor with a professional, self-contained UI.
 - **Developer:** @Gordon.H
 - **Rich Text Formatting:** Includes support for headers, bold, italics, lists, and links.
@@ -125,10 +134,12 @@ web-os-project/
 - **About Panel:** Includes an "About" modal with version and developer information.
 
 ### Browser App
+
 - Basic web browser with URL input
 - Uses iframe for web content display
 
 ### Settings App
+
 - System configuration interface
 - Theme, notifications, and auto-save settings
 
@@ -137,6 +148,7 @@ web-os-project/
 ### For Group Members
 
 1. **Fork the repository** and create your feature branch
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -159,6 +171,7 @@ web-os-project/
    - Return consistent JSON responses
 
 5. **Testing Your Changes**
+
    ```bash
    npm run dev:all
    ```
@@ -180,11 +193,13 @@ web-os-project/
 ## Deployment
 
 ### Frontend (Vercel)
+
 ```bash
 npm run build
 ```
 
 ### Backend (Node.js hosting)
+
 ```bash
 cd src/server
 node index.js

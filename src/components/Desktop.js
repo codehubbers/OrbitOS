@@ -9,13 +9,13 @@ import SettingsApp from '@/pages/apps/settings';
 const desktopApps = [
   { id: 'notes', name: 'Notes', icon: '📝', component: 'notes' },
   { id: 'browser', name: 'Browser', icon: '🌐', component: 'browser' },
-  { id: 'settings', name: 'Settings', icon: '⚙️', component: 'settings' }
+  { id: 'settings', name: 'Settings', icon: '⚙️', component: 'settings' },
 ];
 
 const appComponents = {
   notes: NotesApp,
   browser: BrowserApp,
-  settings: SettingsApp
+  settings: SettingsApp,
 };
 
 export default function Desktop() {
@@ -38,7 +38,7 @@ export default function Desktop() {
       ))}
 
       {/* Open Windows */}
-      {state.openApps.map(app => (
+      {state.openApps.map((app) => (
         <Window key={app.id} app={app}>
           {renderAppContent(app)}
         </Window>
