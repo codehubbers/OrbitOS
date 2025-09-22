@@ -1,6 +1,8 @@
 // src/components/Desktop.js
 
+import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useTheme } from '@/context/ThemeContext';
 import AppIcon from './AppIcon';
 import Window from './Window';
 import Taskbar from './Taskbar';
@@ -37,10 +39,32 @@ const appComponents = {
 
 export default function Desktop() {
   const { state } = useApp();
+  const { theme } = useTheme();
+  const [appPositions, setAppPositions] = useState({});
 
   // --- (ADDED) ---
   // We now get our list of apps dynamically from the single source of truth.
   const desktopApps = AppRegistry.getAllApps();
+
+  // Initialize positions if not set
+  const getAppPosition = (app, index) => {
+    if (appPositions[app.id]) {
+      return appPositions[app.id];
+    }
+    const col = index % 3; // 3 columns
+    const row = Math.floor(index / 3);
+    return {
+      x: 30 + col * 150, // 30px margin + grid spacing
+      y: 30 + row * 150, // 30px margin + grid spacing
+    };
+  };
+
+  const handlePositionChange = (appId, newPosition) => {
+    setAppPositions((prev) => ({
+      ...prev,
+      [appId]: newPosition,
+    }));
+  };
 
   // --- (UNCHANGED) ---
   // This function works perfectly as is.
@@ -50,7 +74,15 @@ export default function Desktop() {
   };
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-blue-400 to-purple-600 relative overflow-hidden">
+    <div
+      className={`h-screen w-screen relative overflow-hidden ${theme.desktop}`}
+      style={{
+        background:
+          theme.id === 'light'
+            ? 'linear-gradient(to bottom right, #a78bfa, #c084fc)'
+            : '#0b132b',
+      }}
+    >
       {/* --- (UNCHANGED) --- */}
       {/* This mapping logic still works because our new `app` objects from the AppRegistry */}
       {/* have the same properties (id, name, etc.) as the old hardcoded objects. */}
@@ -58,7 +90,12 @@ export default function Desktop() {
         <AppIcon
           key={app.id}
           app={app}
-          position={{ x: 50, y: 50 + index * 100 }}
+          position={getAppPosition(app, index)}
+          onPositionChange={handlePositionChange}
+          allApps={desktopApps.map((a, i) => ({
+            ...a,
+            position: getAppPosition(a, i),
+          }))}
         />
       ))}
 

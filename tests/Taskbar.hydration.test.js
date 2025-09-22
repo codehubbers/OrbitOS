@@ -4,7 +4,7 @@ const React = require('react');
 // Mock the AppContext
 const mockState = {
   openApps: [],
-  activeApp: null
+  activeApp: null,
 };
 
 const mockDispatch = jest.fn();
@@ -12,8 +12,18 @@ const mockDispatch = jest.fn();
 jest.mock('../src/context/AppContext', () => ({
   useApp: () => ({
     state: mockState,
-    dispatch: mockDispatch
-  })
+    dispatch: mockDispatch,
+  }),
+}));
+
+// Mock the ThemeContext
+jest.mock('../src/context/ThemeContext', () => ({
+  useTheme: () => ({
+    theme: {
+      taskbar: 'bg-white/50 border-t border-[#d1d5db]',
+      text: { primary: 'text-[#111827]' },
+    },
+  }),
 }));
 
 const Taskbar = require('../src/components/Taskbar').default;
@@ -30,14 +40,14 @@ describe('Taskbar Hydration Error Fix', () => {
 
   test('clock element exists and has correct data-testid', () => {
     render(React.createElement(Taskbar));
-    
+
     const clockElement = screen.getByTestId('clock');
     expect(clockElement).toBeInTheDocument();
   });
 
   test('clock shows time format after component mounts', async () => {
     render(React.createElement(Taskbar));
-    
+
     // Let the effects run
     await act(async () => {
       jest.runOnlyPendingTimers();
