@@ -62,17 +62,16 @@ const ResizeHandle = ({
    * @returns {string} CSS class string
    */
   const getHandleClasses = (direction) => {
-    const baseClasses =
-      'absolute bg-blue-500/10 hover:bg-blue-500/30 transition-colors duration-150 border border-blue-500/20';
+    const baseClasses = 'absolute bg-blue-500/20 hover:bg-blue-500/40 transition-colors duration-150 border-2 border-blue-500/40 pointer-events-auto z-50';
     const sizeClasses = {
-      'top-left': 'w-4 h-4 top-0 left-0 cursor-nw-resize',
-      'top-right': 'w-4 h-4 top-0 right-0 cursor-ne-resize',
-      'bottom-left': 'w-4 h-4 bottom-0 left-0 cursor-sw-resize',
-      'bottom-right': 'w-4 h-4 bottom-0 right-0 cursor-se-resize',
-      top: 'h-1.5 top-0 left-0 right-0 cursor-n-resize',
-      bottom: 'h-1.5 bottom-0 left-0 right-0 cursor-s-resize',
-      left: 'w-1.5 left-0 top-0 bottom-0 cursor-w-resize',
-      right: 'w-1.5 right-0 top-0 bottom-0 cursor-e-resize',
+      'top-left': 'w-6 h-6 top-0 left-0',
+      'top-right': 'w-6 h-6 top-0 right-0',
+      'bottom-left': 'w-6 h-6 bottom-0 left-0',
+      'bottom-right': 'w-6 h-6 bottom-0 right-0',
+      top: 'h-2 top-0 left-0 right-0',
+      bottom: 'h-2 bottom-0 left-0 right-0',
+      left: 'w-2 left-0 top-0 bottom-0',
+      right: 'w-2 right-0 top-0 bottom-0',
     };
 
     return `${baseClasses} ${sizeClasses[direction] || ''}`;
@@ -83,6 +82,8 @@ const ResizeHandle = ({
    * @param {MouseEvent} event - Mouse event
    */
   const handleMouseDown = (event) => {
+    console.log('ResizeHandle: Mouse down on', direction, 'disabled:', disabled);
+    
     if (disabled) return;
 
     // Prevent default behavior
@@ -91,42 +92,53 @@ const ResizeHandle = ({
 
     // Call the parent handler
     if (onMouseDown) {
+      console.log('ResizeHandle: Calling onMouseDown for', direction);
       onMouseDown(direction, event);
+    } else {
+      console.log('ResizeHandle: No onMouseDown handler provided');
     }
   };
 
-  /**
-   * Handle mouse enter event for visual feedback
-   * @param {MouseEvent} event - Mouse event
-   */
-  const handleMouseEnter = (event) => {
-    if (disabled) return;
-
-    // Add visual feedback
-    event.target.style.backgroundColor = 'rgba(59, 130, 246, 0.3)';
-  };
-
-  /**
-   * Handle mouse leave event
-   * @param {MouseEvent} event - Mouse event
-   */
-  const handleMouseLeave = (event) => {
-    if (disabled) return;
-
-    // Remove visual feedback
-    event.target.style.backgroundColor = 'transparent';
-  };
 
   return (
     <div
-      className={`${getHandleClasses(direction)} ${className} pointer-events-auto`}
+      className="absolute pointer-events-auto"
       style={{
         cursor: getCursor(direction),
+        backgroundColor: 'transparent',
+        border: 'none',
+        zIndex: direction.includes('top') || direction.includes('bottom') || 
+                direction.includes('left') || direction.includes('right') ? 9990 : 9999,
+        pointerEvents: 'auto',
+        // Corner handles - fixed size
+        ...(direction.includes('top') && direction.includes('left') && { 
+          top: '0', left: '0', width: '0.7rem', height: '0.7rem' 
+        }),
+        ...(direction.includes('top') && direction.includes('right') && { 
+          top: '0', right: '0', width: '0.7rem', height: '0.7rem' 
+        }),
+        ...(direction.includes('bottom') && direction.includes('left') && { 
+          bottom: '0', left: '0', width: '0.7rem', height: '0.7rem' 
+        }),
+        ...(direction.includes('bottom') && direction.includes('right') && { 
+          bottom: '0', right: '0', width: '0.7rem', height: '0.7rem' 
+        }),
+        // Edge handles - full width/height
+        ...(direction === 'top' && { 
+          top: '0', left: '0.7rem', right: '0.7rem', height: '0.5rem' 
+        }),
+        ...(direction === 'bottom' && { 
+          bottom: '0', left: '0.7rem', right: '0.7rem', height: '0.5rem' 
+        }),
+        ...(direction === 'left' && { 
+          left: '0', top: '0.7rem', bottom: '0.7rem', width: '0.5rem' 
+        }),
+        ...(direction === 'right' && { 
+          right: '0', top: '0.7rem', bottom: '0.7rem', width: '0.5rem' 
+        }),
         ...style,
       }}
       onMouseDown={handleMouseDown}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-label={`Resize window from ${direction}`}

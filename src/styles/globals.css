@@ -5,14 +5,293 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   overflow: hidden;
 }
 
+/* Window dragging styles */
 .window-drag {
   cursor: move;
 }
 
 .window-drag:active {
   cursor: grabbing;
+}
+
+/* Window resize handle styles */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.resize-handle:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.resize-handle:active {
+  background-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Corner resize handles */
+.resize-handle-corner {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.resize-handle-top-left {
+  top: 0;
+  left: 0;
+  cursor: nw-resize;
+}
+
+.resize-handle-top-right {
+  top: 0;
+  right: 0;
+  cursor: ne-resize;
+}
+
+.resize-handle-bottom-left {
+  bottom: 0;
+  left: 0;
+  cursor: sw-resize;
+}
+
+.resize-handle-bottom-right {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+
+/* Edge resize handles */
+.resize-handle-edge {
+  border-radius: 1px;
+}
+
+.resize-handle-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: n-resize;
+}
+
+.resize-handle-bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: s-resize;
+}
+
+.resize-handle-left {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: w-resize;
+}
+
+.resize-handle-right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: e-resize;
+}
+
+/* Window resize state styles */
+.window-resizing {
+  user-select: none;
+  pointer-events: none;
+}
+
+.window-resizing * {
+  pointer-events: none;
+}
+
+/* Window maximize button styles */
+.window-maximize {
+  width: 12px;
+  height: 12px;
+  background-color: #10b981;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.window-maximize:hover {
+  background-color: #059669;
+  transform: scale(1.1);
+}
+
+.window-maximize:active {
+  transform: scale(0.95);
+}
+
+/* Window restore button styles */
+.window-restore {
+  width: 12px;
+  height: 12px;
+  background-color: #10b981;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.window-restore:hover {
+  background-color: #059669;
+  transform: scale(1.1);
+}
+
+.window-restore:active {
+  transform: scale(0.95);
+}
+
+.window-restore::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background-color: white;
+  border-radius: 1px;
+}
+
+/* Window minimize button styles */
+.window-minimize {
+  width: 12px;
+  height: 12px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.window-minimize:hover {
+  background-color: #d97706;
+  transform: scale(1.1);
+}
+
+.window-minimize:active {
+  transform: scale(0.95);
+}
+
+/* Window close button styles */
+.window-close {
+  width: 12px;
+  height: 12px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.window-close:hover {
+  background-color: #dc2626;
+  transform: scale(1.1);
+}
+
+.window-close:active {
+  transform: scale(0.95);
+}
+
+/* Window title bar styles */
+.window-title-bar {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  cursor: move;
+}
+
+.window-title-bar:active {
+  cursor: grabbing;
+}
+
+.window-title {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.window-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Window content area styles */
+.window-content {
+  padding: 16px;
+  height: calc(100% - 41px); /* Subtract title bar height */
+  overflow: auto;
+  background-color: white;
+}
+
+/* Window shadow and border styles */
+.window-container {
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.window-container:hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Window resize animation */
+.window-resize-transition {
+  transition:
+    width 0.1s ease,
+    height 0.1s ease,
+    left 0.1s ease,
+    top 0.1s ease;
+}
+
+/* Window maximize animation */
+.window-maximize-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive window styles */
+@media (max-width: 768px) {
+  .resize-handle-corner {
+    width: 16px;
+    height: 16px;
+  }
+
+  .resize-handle-edge {
+    height: 6px;
+    width: 6px;
+  }
+
+  .window-controls {
+    gap: 6px;
+  }
+
+  .window-maximize,
+  .window-minimize,
+  .window-close {
+    width: 14px;
+    height: 14px;
+  }
 }

@@ -64,6 +64,7 @@ const ResizeHandles = ({
     return null;
   }
 
+
   return (
     <div
       className={`absolute inset-0 pointer-events-none ${className}`}
