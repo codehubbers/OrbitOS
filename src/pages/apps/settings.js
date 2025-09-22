@@ -1,31 +1,38 @@
 import { useState } from 'react';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function SettingsApp() {
+  const { theme, currentTheme, switchTheme, themes } = useTheme();
   const [settings, setSettings] = useState({
-    theme: 'light',
     notifications: true,
-    autoSave: false
+    autoSave: false,
   });
 
   const handleSettingChange = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleThemeChange = (themeId) => {
+    switchTheme(themeId);
   };
 
   return (
-    <div className="h-full p-4">
+    <div className={`h-full p-4 ${theme.app.bg} ${theme.app.text}`}>
       <h2 className="text-xl font-bold mb-4">System Settings</h2>
-      
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <label className="font-medium">Theme</label>
           <select
-            value={settings.theme}
-            onChange={(e) => handleSettingChange('theme', e.target.value)}
-            className="border rounded px-2 py-1"
+            value={currentTheme}
+            onChange={(e) => handleThemeChange(e.target.value)}
+            className={`border rounded px-2 py-1 ${theme.app.input}`}
           >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="auto">Auto</option>
+            {themes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -34,8 +41,10 @@ export default function SettingsApp() {
           <input
             type="checkbox"
             checked={settings.notifications}
-            onChange={(e) => handleSettingChange('notifications', e.target.checked)}
-            className="w-4 h-4"
+            onChange={(e) =>
+              handleSettingChange('notifications', e.target.checked)
+            }
+            className={`w-4 h-4 ${theme.id === 'dark' ? 'accent-blue-500' : ''}`}
           />
         </div>
 
@@ -45,14 +54,16 @@ export default function SettingsApp() {
             type="checkbox"
             checked={settings.autoSave}
             onChange={(e) => handleSettingChange('autoSave', e.target.checked)}
-            className="w-4 h-4"
+            className={`w-4 h-4 ${theme.id === 'dark' ? 'accent-blue-500' : ''}`}
           />
         </div>
       </div>
 
-      <div className="mt-6 p-3 bg-gray-100 rounded">
+      <div className={`mt-6 p-3 ${theme.app.table} rounded`}>
         <h3 className="font-medium mb-2">Current Settings:</h3>
-        <pre className="text-sm">{JSON.stringify(settings, null, 2)}</pre>
+        <pre className={`text-sm font-mono ${theme.app.text}`}>
+          {JSON.stringify({ theme: currentTheme, ...settings }, null, 2)}
+        </pre>
       </div>
     </div>
   );
