@@ -14,6 +14,7 @@ export default class App {
    */
   constructor({ id, name, icon, component }) {
     this.id = id;
+    this.processId = Math.random().toString(10).substring(16);
     this.name = name;
     this.icon = icon;
     this.component = component;

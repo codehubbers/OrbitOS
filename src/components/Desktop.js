@@ -14,7 +14,7 @@ import AppRegistry from '@/system/services/AppRegistry';
 import NotesApp from '@/pages/apps/notes';
 import BrowserApp from '@/pages/apps/browser';
 import SettingsApp from '@/pages/apps/settings';
-
+import MonitorApp from '@/pages/apps/monitor';
 
 // --- (REMOVED) ---
 // This entire hardcoded array is no longer needed.
@@ -24,17 +24,16 @@ import SettingsApp from '@/pages/apps/settings';
 //   { id: 'settings', name: 'Settings', icon: '⚙️', component: 'settings' }
 // ];
 
-
 // --- (UNCHANGED) ---
 // This mapping is still essential. It connects the string 'notes' from our
 // App class instance to the actual React component NotesApp.
 const appComponents = {
   // These keys MUST match the 'component' field in your App definitions.
-  notes: NotesApp,      // 'notes' (lowercase) matches 'notes' in NotesApp.js
+  notes: NotesApp, // 'notes' (lowercase) matches 'notes' in NotesApp.js
   browser: BrowserApp,
-  settings: SettingsApp
+  settings: SettingsApp,
+  monitor: MonitorApp,
 };
-
 
 export default function Desktop() {
   const { state } = useApp();
@@ -42,7 +41,6 @@ export default function Desktop() {
   // --- (ADDED) ---
   // We now get our list of apps dynamically from the single source of truth.
   const desktopApps = AppRegistry.getAllApps();
-
 
   // --- (UNCHANGED) ---
   // This function works perfectly as is.
@@ -66,12 +64,12 @@ export default function Desktop() {
 
       {/* --- (UNCHANGED) --- */}
       {/* This logic is based on the global context and doesn't need to change. */}
-      {state.openApps.map(app => (
+      {state.openApps.map((app) => (
         <Window key={app.id} app={app}>
           {renderAppContent(app)}
         </Window>
       ))}
-      
+
       <Taskbar />
     </div>
   );
