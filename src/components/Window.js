@@ -77,13 +77,32 @@ export default function Window({ app, children }) {
   });
 
   // Memoize size and position to prevent unnecessary re-renders
-  const size = useMemo(() => resizeSize, [resizeSize.width, resizeSize.height]);
-  const position = useMemo(() => resizePosition, [resizePosition.x, resizePosition.y]);
+  // Use app.size/position when maximized, otherwise use resize hook values
+  const size = useMemo(
+    () => (app.maximized ? app.size : resizeSize),
+    [
+      app.maximized,
+      app.size.width,
+      app.size.height,
+      resizeSize.width,
+      resizeSize.height,
+    ],
+  );
+  const position = useMemo(
+    () => (app.maximized ? app.position : resizePosition),
+    [
+      app.maximized,
+      app.position.x,
+      app.position.y,
+      resizePosition.x,
+      resizePosition.y,
+    ],
+  );
 
   /** Handle window drag start */
   const handleMouseDown = (e) => {
-    // Don't start drag if resizing
-    if (isResizing) return;
+    // Don't start drag if resizing or maximized
+    if (isResizing || app.maximized) return;
 
     setIsDragging(true);
     dragRef.current = {
@@ -119,7 +138,14 @@ export default function Window({ app, children }) {
         handleResize(e);
       }
     },
-    [isDragging, isResizing, size.width, size.height, updateWindow, handleResize],
+    [
+      isDragging,
+      isResizing,
+      size.width,
+      size.height,
+      updateWindow,
+      handleResize,
+    ],
   );
 
   /** Handle window drag end */
@@ -138,7 +164,15 @@ export default function Window({ app, children }) {
     if (isResizing) {
       endResize();
     }
-  }, [isDragging, isResizing, position.x, position.y, dispatch, app.id, endResize]);
+  }, [
+    isDragging,
+    isResizing,
+    position.x,
+    position.y,
+    dispatch,
+    app.id,
+    endResize,
+  ]);
 
   /** Handle window close */
   const handleClose = () => {
@@ -153,6 +187,13 @@ export default function Window({ app, children }) {
   /** Handle window maximize/restore */
   const handleMaximize = () => {
     dispatch({ type: 'MAXIMIZE_APP', payload: { id: app.id } });
+  };
+
+  /** Handle double click on title bar for maximize/restore */
+  const handleTitleBarDoubleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleMaximize();
   };
 
   /** Handle resize start */
@@ -194,7 +235,11 @@ export default function Window({ app, children }) {
       onMouseUp={handleMouseUp}
     >
       {/* Title Bar */}
-      <div className="window-title-bar" onMouseDown={handleMouseDown}>
+      <div
+        className="window-title-bar"
+        onMouseDown={handleMouseDown}
+        onDoubleClick={handleTitleBarDoubleClick}
+      >
         <span className="window-title">{app.name}</span>
         <div className="window-controls">
           <button

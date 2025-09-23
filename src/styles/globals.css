@@ -272,6 +272,19 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Visual style when window is maximized */
+.window-maximize-transition {
+  border-radius: 0;
+  box-shadow: none;
+  border-left: none;
+  border-right: none;
+}
+
+/* Disable move cursor on title bar when maximized */
+.window-maximize-transition .window-title-bar {
+  cursor: default;
+}
+
 /* Responsive window styles */
 @media (max-width: 768px) {
   .resize-handle-corner {
