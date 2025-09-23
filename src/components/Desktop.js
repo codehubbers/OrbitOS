@@ -5,7 +5,12 @@ import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import AppIcon from './AppIcon';
 import Window from './Window';
+import EnhancedWindow from './EnhancedWindow';
 import Taskbar from './Taskbar';
+import TopBarService from '@/system/services/TopBarService';
+import TopBarDropdownService from '@/system/services/TopBarDropdownService';
+import TopBarInfoAboutService from '@/system/services/TopBarInfoAboutService';
+import WindowTopBarKeyShortcutRegistrationService from '@/system/services/WindowTopBarKeyShortcutRegistrationService';
 
 // --- (CHANGED) ---
 // We no longer import the app components here directly for the list.
@@ -66,11 +71,94 @@ export default function Desktop() {
     }));
   };
 
-  // --- (UNCHANGED) ---
-  // This function works perfectly as is.
-  const renderAppContent = (app) => {
+  // Create services for enhanced apps
+  const createAppServices = (app) => {
+    if (app.id === 'notes') {
+      const topBarService = new TopBarService(app.id, app.name, '/icons/notes.png');
+      const dropdownService = new TopBarDropdownService();
+      const keyShortcutService = new WindowTopBarKeyShortcutRegistrationService();
+      
+      // Pre-populate dropdowns to avoid delay
+      const menuHandlers = {
+        onNew: () => {},
+        onOpen: () => {},
+        onOpenLocal: () => {},
+        onSave: () => {},
+        onSaveAs: () => {},
+        onPrint: () => window.print(),
+        onUndo: () => document.execCommand('undo'),
+        onRedo: () => document.execCommand('redo'),
+        onCut: () => document.execCommand('cut'),
+        onCopy: () => document.execCommand('copy'),
+        onPaste: () => document.execCommand('paste'),
+        onFind: () => {},
+        onReplace: () => {},
+        onFindInFiles: () => {},
+        onFindNext: () => {},
+        onFindPrevious: () => {},
+        onSelectFindNext: () => {},
+        onSelectFindPrevious: () => {},
+        onFindVolatileNext: () => {},
+        onFindVolatilePrevious: () => {},
+        onIncrementalSearch: () => {},
+        onSearchResults: () => {},
+        onNextSearchResult: () => {},
+        onPreviousSearchResult: () => {},
+        onGoTo: () => {},
+        onGoToMatchingBrace: () => {},
+        onSelectBetween: () => {},
+        onStyleAllOccurrences: () => {},
+        onStyleOneToken: () => {},
+        onClearStyle: () => {},
+        onJumpUp: () => {},
+        onJumpDown: () => {},
+        onCopyStyledText: () => {},
+        onFindInRange: () => {},
+        hasChanges: false,
+        hasSelection: false
+      };
+      
+      const fileDropdown = dropdownService.createFileDropdown(menuHandlers);
+      const editDropdown = dropdownService.createEditDropdown(menuHandlers);
+      const searchDropdown = dropdownService.createSearchDropdown(menuHandlers);
+      dropdownService.addDropdown(fileDropdown.label, fileDropdown.items);
+      dropdownService.addDropdown(editDropdown.label, editDropdown.items);
+      dropdownService.addDropdown(searchDropdown.label, searchDropdown.items);
+      
+      const infoService = new TopBarInfoAboutService({
+        onShowAbout: () => {}
+      });
+      
+      return { topBarService, dropdownService, infoService, keyShortcutService };
+    }
+    return null;
+  };
+
+  const renderWindow = (app) => {
+    const services = createAppServices(app);
     const AppComponent = appComponents[app.component];
-    return AppComponent ? <AppComponent /> : <div>App not found</div>;
+    
+    if (!AppComponent) return <div key={app.id}>App not found</div>;
+    
+    if (services) {
+      return (
+        <EnhancedWindow 
+          key={app.id} 
+          app={app} 
+          topBarService={services.topBarService}
+          dropdownService={services.dropdownService}
+          infoService={services.infoService}
+          keyShortcutService={services.keyShortcutService}
+        >
+          <AppComponent {...services} />
+        </EnhancedWindow>
+      );
+    }
+    return (
+      <Window key={app.id} app={app}>
+        <AppComponent />
+      </Window>
+    );
   };
 
   return (
@@ -99,13 +187,8 @@ export default function Desktop() {
         />
       ))}
 
-      {/* --- (UNCHANGED) --- */}
-      {/* This logic is based on the global context and doesn't need to change. */}
-      {state.openApps.map((app) => (
-        <Window key={app.id} app={app}>
-          {renderAppContent(app)}
-        </Window>
-      ))}
+      {/* Render windows with appropriate services */}
+      {state.openApps.map((app) => renderWindow(app))}
 
       <Taskbar />
     </div>

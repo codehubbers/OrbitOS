@@ -1,31 +1,22 @@
 // src/pages/apps/notes.js
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { useTheme } from '@/context/ThemeContext';
-import 'react-quill/dist/quill.snow.css';
 
 // Import icons for the UI
 import {
-  FolderOpenIcon,
-  ArrowDownTrayIcon,
-  MagnifyingGlassIcon,
-  InformationCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-// Dynamically import ReactQuill to prevent SSR errors.
-const ReactQuill = dynamic(() => import('react-quill'), {
-  ssr: false,
-  loading: () => <p className="p-4 text-gray-500">Loading Editor...</p>,
-});
-
 /**
  * A feature-rich rich text editor application for OrbitOS.
- * This version uses a robust flexbox layout and a floating element for the word count
- * to ensure all UI is visible regardless of parent container behavior.
+ * Enhanced with top bar services and menu system.
+ * 
+ * First created by @Ziqian-Huang0607
+ * Contributors: @dailker
  */
-const Notes = () => {
+
+const Notes = ({ topBarService, dropdownService, infoService, keyShortcutService, setMarkdownActions }) => {
   const { theme } = useTheme();
   // --- STATE MANAGEMENT ---
   const [content, setContent] = useState('');
@@ -34,45 +25,72 @@ const Notes = () => {
   const [replaceText, setReplaceText] = useState('');
   const [showFindReplace, setShowFindReplace] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [fileName, setFileName] = useState('new.txt');
+  const [hasChanges, setHasChanges] = useState(false);
+  const [textareaRef, setTextareaRef] = useState(null);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+  const [searchMatches, setSearchMatches] = useState([]);
+  const [hasSelection, setHasSelection] = useState(false);
 
-  // --- EDITOR & TOOLBAR CONFIGURATION ---
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link'],
-      ['clean'],
-    ],
-  };
+
 
   // --- REACT HOOKS & LOGIC HANDLERS ---
   useEffect(() => {
-    if (typeof content === 'string') {
-      const textOnly = content.replace(/<[^>]*>?/gm, '');
-      const words = textOnly.trim().split(/\s+/).filter(Boolean);
-      setWordCount(words.length === 1 && words[0] === '' ? 0 : words.length);
-    }
+    const words = content.trim().split(/\s+/).filter(Boolean);
+    setWordCount(words.length === 1 && words[0] === '' ? 0 : words.length);
+    if (content) setHasChanges(true);
   }, [content]);
 
+  useEffect(() => {
+    if (topBarService) {
+      topBarService.setTitle(fileName);
+      topBarService.setCustomAttribute('hasChanges', hasChanges);
+    }
+  }, [fileName, hasChanges, topBarService]);
+
+  const handleNew = () => {
+    setContent('');
+    setFileName('new.txt');
+    setHasChanges(false);
+  };
+
   const handleSave = () => {
-    const blob = new Blob([content], { type: 'text/html' });
+    const blob = new Blob([content], { type: 'text/plain' });
     const href = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = href;
-    link.download = 'MyNote.html';
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(href);
+    setHasChanges(false);
   };
 
-  const handleLoad = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setContent(e.target.result);
-    reader.readAsText(file);
+  const handleSaveAs = () => {
+    const newFileName = prompt('Enter filename:', fileName);
+    if (newFileName) {
+      setFileName(newFileName);
+      handleSave();
+    }
+  };
+
+  const handleOpenLocal = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.html';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setContent(e.target.result);
+        setFileName(file.name);
+        setHasChanges(false);
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   };
 
   const handleReplaceAll = () => {
@@ -83,65 +101,159 @@ const Notes = () => {
     setContent((prevContent) => prevContent.replaceAll(findText, replaceText));
   };
 
+  const getSelectedText = () => {
+    if (textareaRef) {
+      const start = textareaRef.selectionStart;
+      const end = textareaRef.selectionEnd;
+      return content.substring(start, end);
+    }
+    return '';
+  };
+
+  const findMatches = (searchText) => {
+    if (!searchText) return [];
+    const matches = [];
+    let index = content.indexOf(searchText);
+    while (index !== -1) {
+      matches.push(index);
+      index = content.indexOf(searchText, index + 1);
+    }
+    return matches;
+  };
+
+  const handleFindNext = () => {
+    if (!findText) return;
+    const matches = findMatches(findText);
+    if (matches.length === 0) return;
+    
+    const nextIndex = (currentSearchIndex + 1) % matches.length;
+    setCurrentSearchIndex(nextIndex);
+    const matchPos = matches[nextIndex];
+    
+    if (textareaRef) {
+      textareaRef.focus();
+      textareaRef.setSelectionRange(matchPos, matchPos + findText.length);
+    }
+  };
+
+  const handleFindPrevious = () => {
+    if (!findText) return;
+    const matches = findMatches(findText);
+    if (matches.length === 0) return;
+    
+    const prevIndex = currentSearchIndex <= 0 ? matches.length - 1 : currentSearchIndex - 1;
+    setCurrentSearchIndex(prevIndex);
+    const matchPos = matches[prevIndex];
+    
+    if (textareaRef) {
+      textareaRef.focus();
+      textareaRef.setSelectionRange(matchPos, matchPos + findText.length);
+    }
+  };
+
+  const handleSelectAndFindNext = () => {
+    const selected = getSelectedText();
+    if (selected && textareaRef) {
+      setFindText(selected);
+      const matches = findMatches(selected);
+      if (matches.length > 0) {
+        const currentPos = textareaRef.selectionStart;
+        const nextMatch = matches.find(pos => pos > currentPos) || matches[0];
+        const matchIndex = matches.indexOf(nextMatch);
+        setCurrentSearchIndex(matchIndex);
+        textareaRef.focus();
+        textareaRef.setSelectionRange(nextMatch, nextMatch + selected.length);
+      }
+    }
+  };
+
+  const wrapSelectedText = (prefix, suffix = prefix) => {
+    if (!textareaRef) return;
+    const start = textareaRef.selectionStart;
+    const end = textareaRef.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const newText = content.substring(0, start) + prefix + selectedText + suffix + content.substring(end);
+    setContent(newText);
+    setTimeout(() => {
+      textareaRef.focus();
+      textareaRef.setSelectionRange(start + prefix.length, end + prefix.length);
+    }, 0);
+  };
+
+  const handleBold = () => wrapSelectedText('**');
+  const handleItalic = () => wrapSelectedText('*');
+  const handleStrikethrough = () => wrapSelectedText('~~');
+  const handleCode = () => wrapSelectedText('`');
+  const handleHeader = () => wrapSelectedText('# ', '');
+
+  // Update dropdown handlers
+  useEffect(() => {
+    if (dropdownService) {
+      const dropdowns = dropdownService.getDropdowns();
+      dropdowns.forEach(dropdown => {
+        dropdown.items.forEach(item => {
+          if (item.label === 'New') item.action = handleNew;
+          else if (item.label === 'Open Local File') item.action = handleOpenLocal;
+          else if (item.label === 'Save') {
+            item.action = handleSave;
+            item.disabled = !hasChanges;
+          }
+          else if (item.label === 'Save As') item.action = handleSaveAs;
+          else if (item.label === 'Find...') item.action = () => setShowFindReplace(true);
+          else if (item.label === 'Replace...') item.action = () => setShowFindReplace(true);
+          else if (item.label === 'Select and Find Next') {
+            item.action = handleSelectAndFindNext;
+            item.disabled = !hasSelection;
+          }
+        });
+      });
+    }
+  }, [dropdownService, hasChanges, hasSelection]);
+
+  // Register keyboard shortcuts
+  useEffect(() => {
+    if (keyShortcutService) {
+      keyShortcutService.register('Ctrl+f', () => setShowFindReplace(true));
+      keyShortcutService.register('Ctrl+h', () => setShowFindReplace(true));
+      keyShortcutService.register('Ctrl+s', handleSave);
+      keyShortcutService.register('Ctrl+n', handleNew);
+      keyShortcutService.register('F3', handleFindNext);
+      keyShortcutService.register('Shift+F3', handleFindPrevious);
+      keyShortcutService.register('Ctrl+F3', handleSelectAndFindNext);
+      
+      return () => {
+        keyShortcutService.cleanup();
+      };
+    }
+  }, [keyShortcutService]);
+
+  // Setup info service
+  useEffect(() => {
+    if (infoService) {
+      infoService.appInfo.onShowAbout = () => setShowAboutModal(true);
+    }
+  }, [infoService]);
+
+  // Update markdown actions
+  useEffect(() => {
+    if (setMarkdownActions) {
+      setMarkdownActions({
+        handleBold,
+        handleItalic,
+        handleStrikethrough,
+        handleCode,
+        handleHeader
+      });
+    }
+  }, [setMarkdownActions, handleBold, handleItalic, handleStrikethrough, handleCode, handleHeader]);
+
   // --- JSX RENDER ---
   return (
-    // revert to a clean flexbox layout. 'overflow-hidden' is key.
-    <div
-      className={`flex flex-col h-full w-full ${theme.app.bg} ${theme.app.text} overflow-hidden`}
-    >
-      {/* Menu Bar: 'flex-shrink-0' prevents this from being squeezed. */}
-      <header
-        className={`px-3 h-12 border-b ${theme.app.toolbar} flex items-center gap-3 text-sm z-20 shadow-sm flex-shrink-0`}
-      >
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleSave}
-            className={`flex items-center gap-2 p-2 rounded-md ${theme.app.toolbarButton}`}
-            title="Save file"
-          >
-            <ArrowDownTrayIcon className="h-5 w-5" />{' '}
-            <span className="font-medium">Save</span>
-          </button>
-          <label
-            className={`flex items-center gap-2 p-2 rounded-md ${theme.app.toolbarButton} cursor-pointer`}
-            title="Load file"
-          >
-            <FolderOpenIcon className="h-5 w-5" />{' '}
-            <span className="font-medium">Load</span>
-            <input
-              type="file"
-              onChange={handleLoad}
-              className="hidden"
-              accept=".txt,.html"
-            />
-          </label>
-        </div>
-        <div className="w-px h-6 bg-gray-300" />
-        <div className="flex items-center">
-          <button
-            onClick={() => setShowFindReplace(!showFindReplace)}
-            className={`flex items-center gap-2 p-2 rounded-md ${showFindReplace ? 'bg-blue-600 text-white' : theme.app.toolbarButton}`}
-            title="Find and Replace"
-          >
-            <MagnifyingGlassIcon className="h-5 w-5" />{' '}
-            <span className="font-medium">Find & Replace</span>
-          </button>
-        </div>
-        <div className="flex-grow" />
-        <button
-          onClick={() => setShowAboutModal(true)}
-          className={`flex items-center gap-2 p-2 rounded-md ${theme.app.toolbarButton}`}
-          title="About this app"
-        >
-          <InformationCircleIcon className="h-5 w-5" />
-        </button>
-      </header>
+    <div className={`flex flex-col h-full w-full ${theme.app.bg} ${theme.app.text} overflow-hidden`}>
 
-      {/* Find & Replace Panel: Also gets 'flex-shrink-0'. */}
+      {/* Find & Replace Panel */}
       {showFindReplace && (
-        <div
-          className={`p-2 border-b ${theme.app.bg} flex items-center gap-2 text-sm shadow-md flex-shrink-0 z-10`}
-        >
+        <div className={`p-2 border-b ${theme.app.bg} flex items-center gap-2 text-sm shadow-md flex-shrink-0 z-10`}>
           <input
             type="text"
             placeholder="Find"
@@ -149,6 +261,22 @@ const Notes = () => {
             onChange={(e) => setFindText(e.target.value)}
             className={`px-2 py-1 border rounded-md w-48 focus:ring-2 focus:ring-blue-500 outline-none ${theme.app.input}`}
           />
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleFindPrevious}
+            className="p-1 hover:bg-gray-200 rounded"
+            title="Find Previous"
+          >
+            ▲
+          </button>
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleFindNext}
+            className="p-1 hover:bg-gray-200 rounded"
+            title="Find Next"
+          >
+            ▼
+          </button>
           <input
             type="text"
             placeholder="Replace with"
@@ -157,54 +285,66 @@ const Notes = () => {
             className={`px-2 py-1 border rounded-md w-48 focus:ring-2 focus:ring-blue-500 outline-none ${theme.app.input}`}
           />
           <button
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleReplaceAll}
             className={`px-4 py-1 rounded-md ${theme.app.button}`}
           >
             Replace All
           </button>
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setShowFindReplace(false)}
+            className="ml-auto p-1 hover:bg-gray-200 rounded"
+          >
+            <XMarkIcon className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      {/* Main Content Area: 'relative' to position the word count. 'flex-grow' and 'h-0' make it fill the space. */}
-      <main className="relative flex-grow h-0">
-        <ReactQuill
-          theme="snow"
+      {/* Main Content Area */}
+      <main className="relative flex-grow">
+        <textarea
+          ref={setTextareaRef}
           value={content}
-          onChange={setContent}
-          modules={modules}
-          className="h-full w-full border-0"
+          onChange={(e) => setContent(e.target.value)}
+          onSelect={() => {
+            if (textareaRef) {
+              const selected = textareaRef.selectionStart !== textareaRef.selectionEnd;
+              setHasSelection(selected);
+            }
+          }}
+          className="w-full h-full p-3 border-0 outline-none resize-none font-mono text-sm"
+          placeholder="Start typing..."
         />
-        {/* Floating Word Count. Sits on top of the editor in the bottom-right corner. */}
+        {/* Floating Word Count */}
         <div className="absolute bottom-4 right-5 z-10 bg-gray-800 text-white text-xs font-mono px-3 py-1 rounded-full shadow-lg opacity-80 pointer-events-none">
           {wordCount} {wordCount === 1 ? 'word' : 'words'}
         </div>
       </main>
 
-      {/* "About" */}
+      {/* About Modal */}
       {showAboutModal && (
         <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-2xl w-96">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
-                About Notes Editor
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900">About Notes Editor</h2>
               <button
                 onClick={() => setShowAboutModal(false)}
                 className="p-1 rounded-full text-gray-500 hover:bg-gray-200"
-                title="Close"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <p className="text-gray-700">
-              <strong>Version:</strong> 0.01 (OrbitOS Stage 1)
+              <strong>Version:</strong> 0.02 (OrbitOS Enhanced)
               <br />
               <strong>Developer:</strong> @Gordon.H | Codehubbers
               <br />
+              <strong>Contributors:</strong> @dailker
               <br />
-              This is an enhanced built-in rich text editor built for the
-              OrbitOS project. It includes features like file saving/loading,
-              find and replace, and real-time word count.
+              <br />
+              Enhanced rich text editor with top bar services, menu system,
+              file operations, find and replace, and real-time word count.
             </p>
           </div>
         </div>

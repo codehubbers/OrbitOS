@@ -80,23 +80,23 @@ class ThemeRegistry {
     if (typeof document !== 'undefined') {
       const style = document.createElement('style');
       style.textContent = `
-        @keyframes slideInFromTop {
+        @keyframes slideInFromRight {
           from {
-            transform: translateY(-100px);
+            transform: translateX(100%);
             opacity: 0;
           }
           to {
-            transform: translateY(0);
+            transform: translateX(0);
             opacity: 1;
           }
         }
-        @keyframes slideOutToTop {
+        @keyframes slideOutToRight {
           from {
-            transform: translateY(0);
+            transform: translateX(0);
             opacity: 1;
           }
           to {
-            transform: translateY(-100px);
+            transform: translateX(100%);
             opacity: 0;
           }
         }

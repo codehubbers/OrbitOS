@@ -117,7 +117,7 @@ const NotificationItem = ({ notification, theme, onRemove }) => {
     <div
       className={`relative px-8 py-4 rounded-lg ${theme.notification} shadow-lg flex items-center gap-4 overflow-hidden`}
       style={{
-        animation: isExiting ? 'slideOutToTop 0.3s ease-in' : 'slideInFromTop 0.5s ease-out',
+        animation: isExiting ? 'slideOutToRight 0.3s ease-in' : 'slideInFromRight 0.5s ease-out',
         minWidth: '300px',
         border: `2px solid rgba(59, 130, 246, ${borderOpacity})`
       }}
@@ -156,13 +156,11 @@ const NotificationToaster = ({ notifications, onRemove }) => {
       style={{
         position: 'fixed',
         top: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        right: '24px',
         zIndex: 999999,
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        margin: '0 20px'
+        gap: '12px'
       }}
     >
       {notifications.map((notification) => (
