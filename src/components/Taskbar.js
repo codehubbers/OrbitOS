@@ -1,4 +1,4 @@
-// src/components/Taskbar.js
+ // src/components/Taskbar.js
 
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
@@ -7,7 +7,6 @@ import AppRegistry from '@/system/services/AppRegistry';
 import { motion } from 'framer-motion';
 
 // --- Style Constants ---
-// Defining styles here keeps the JSX clean and makes theme changes easy.
 const separatorStyle = 'w-px h-8 bg-white/20';
 
 // --- Sub-Components for Readability ---
@@ -399,7 +398,6 @@ const Clock = () => {
 };
 
 // --- The Main Taskbar Component ---
-// This is now much cleaner, responsible only for layout and passing data.
 
 export default function Taskbar() {
   const { state, dispatch } = useApp();
@@ -415,7 +413,7 @@ export default function Taskbar() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 h-16 ${theme.taskbar} flex items-center justify-between px-4 z-50`}
+      className="fixed bottom-0 left-0 right-0 h-16 bg-black/30 backdrop-blur-lg border-t border-white/20 flex items-center justify-between px-4 z-50"
     >
       <div className="flex items-center space-x-2">
         <StartButtonAndMenu

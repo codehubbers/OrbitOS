@@ -1,135 +1,86 @@
 // src/themes/ThemeRegistry.js
 
-const themes = {
-  light: {
-    id: 'light',
-    name: 'Light Mode',
-    desktop: 'bg-gradient-to-br from-[#a78bfa] to-[#c084fc]',
-    taskbar: 'bg-white/50 border-t border-[#d1d5db]',
-    window: {
-      bg: 'bg-white',
-      border: 'border-[#d1d5db]',
-      header: 'bg-white border-b border-[#d1d5db]',
-      text: 'text-[#111827]',
-      content: 'text-[#111827] bg-white'
-    },
-    startMenu: 'bg-white border border-gray-300',
-    glass: 'bg-white/10 backdrop-blur-sm border border-white/20',
-    text: {
-      primary: 'text-[#111827]',
-      secondary: 'text-[#374151]',
-      window: 'text-[#111827]',
-      startMenu: 'text-[#111827]'
-    },
-    app: {
-      bg: 'bg-[#ffffff]',
-      text: 'text-[#111827]',
-      input: 'bg-[#ffffff] border-[#d1d5db] text-[#111827] placeholder-gray-500',
-      button: 'bg-[#f9fafb] hover:bg-[#c4b5fd] text-[#111827]',
-      table: 'bg-[#ffffff] border-[#e5e7eb]',
-      tableHeader: 'bg-[#f9fafb] text-[#111827]',
-      tableCell: 'bg-[#ffffff] text-[#111827] border-[#e5e7eb]',
-      toolbar: 'bg-[#f9fafb] border-[#d1d5db]',
-      toolbarButton: 'text-[#374151] hover:text-[#111827] hover:bg-[#c4b5fd]'
-    },
-    notification: 'bg-white text-[#111827] border border-gray-300'
-  },
-  dark: {
-    id: 'dark',
-    name: 'Dark Mode',
-    desktop: 'bg-[#0b132b]',
-    taskbar: 'bg-[#1c2541]/50 border-t border-[#2c3e50]',
-    window: {
-      bg: 'bg-black',
-      border: 'border-gray-600',
-      header: 'bg-gray-900 border-b border-gray-700',
-      text: 'text-white',
-      content: 'text-white bg-black'
-    },
-    startMenu: 'bg-[#1c2541] border border-[#2c3e50]',
-    glass: 'bg-[#3a506b] border border-[#2c3e50]',
-    text: {
-      primary: 'text-white',
-      secondary: 'text-gray-300',
-      window: 'text-white',
-      startMenu: 'text-white'
-    },
-    app: {
-      bg: 'bg-black',
-      text: 'text-white',
-      input: 'bg-gray-800 border-gray-600 text-white placeholder-gray-400',
-      button: 'bg-gray-700 hover:bg-blue-600 text-white',
-      table: 'bg-gray-800 border-gray-600',
-      tableHeader: 'bg-gray-900 text-white',
-      tableCell: 'bg-black text-white border-gray-600',
-      toolbar: 'bg-gray-900 border-gray-700',
-      toolbarButton: 'text-gray-200 hover:text-white hover:bg-blue-600'
-    },
-    notification: 'bg-gray-800 text-white border border-gray-600'
-  }
-};
+// Import the themes from their dedicated files.
+import { lightTheme } from './lightTheme';
+import { darkTheme } from './darkTheme';
+import { highContrastTheme } from './darkTheme';
 
 class ThemeRegistry {
   constructor() {
-    this.themes = themes;
-    this.currentTheme = 'light';
+    this.themes = new Map();
+    this.defaultThemeId = 'light';
+    this.currentThemeId = 'light'; // Keep track of the active theme ID
+
+    // Register all available themes
+    this.register(lightTheme);
+    this.register(darkTheme);
+    this.register(highContrastTheme);
+
+    // Keep your custom CSS injection
     this.injectCSS();
   }
 
+  /**
+   * Adds a theme object to the registry.
+   * @param {object} theme - A theme object with a unique 'id'.
+   */
+  register(theme) {
+    if (theme && theme.id) {
+      this.themes.set(theme.id, theme);
+    } else {
+      console.warn('Attempted to register an invalid theme.', theme);
+    }
+  }
+
+  // Your custom animation injector - unchanged.
   injectCSS() {
     if (typeof document !== 'undefined') {
       const style = document.createElement('style');
       style.textContent = `
-        @keyframes slideInFromRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        @keyframes slideOutToRight {
-          from {
-            transform: translateX(0);
-            opacity: 1;
-          }
-          to {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-        }
-        @keyframes shrinkProgress {
-          from {
-            width: 100%;
-          }
-          to {
-            width: 0%;
-          }
-        }
+        @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutToRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        @keyframes shrinkProgress { from { width: 100%; } to { width: 0%; } }
       `;
       document.head.appendChild(style);
     }
   }
 
+  /**
+   * Returns an array of all registered theme objects.
+   * @returns {Array<object>}
+   */
   getAllThemes() {
-    return Object.values(this.themes);
+    return Array.from(this.themes.values());
   }
 
+  /**
+   * Retrieves a theme object by its ID.
+   * @param {string} themeId - The ID of the theme.
+   * @returns {object} The theme object.
+   */
   getTheme(themeId) {
-    return this.themes[themeId] || this.themes.light;
+    return this.themes.get(themeId) || this.themes.get(this.defaultThemeId);
   }
 
+  /**
+   * Gets the currently active theme object.
+   * @returns {object}
+   */
   getCurrentTheme() {
-    return this.getTheme(this.currentTheme);
+    return this.getTheme(this.currentThemeId);
   }
-
+  
+  /**
+   * Sets the active theme ID.
+   * @param {string} themeId - The ID of the theme to set.
+   */
   setTheme(themeId) {
-    if (this.themes[themeId]) {
-      this.currentTheme = themeId;
+    if (this.themes.has(themeId)) {
+      this.currentThemeId = themeId;
     }
   }
 }
 
-export default new ThemeRegistry();
+// Export a single instance for the whole app.
+const instance = new ThemeRegistry();
+export default instance;
