@@ -20,12 +20,14 @@ import NotesApp from '@/pages/apps/notes';
 import BrowserApp from '@/pages/apps/browser';
 import SettingsApp from '@/pages/apps/settings';
 import MonitorApp from '@/pages/apps/monitor';
+import FilemanagerApp from '@/pages/apps/filemanager';
 
 const appComponents = {
   notes: NotesApp,
   browser: BrowserApp,
   settings: SettingsApp,
   monitor: MonitorApp,
+  filemanager: FilemanagerApp,
 };
 
 export default function Desktop() {
