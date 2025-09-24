@@ -22,6 +22,7 @@ import NotesApp from '@/pages/apps/notes';
 import BrowserApp from '@/pages/apps/browser';
 import SettingsApp from '@/pages/apps/settings';
 import MonitorApp from '@/pages/apps/monitor';
+import FilemanagerApp from '@/pages/apps/filemanager';
 
 // --- (REMOVED) ---
 // This entire hardcoded array is no longer needed.
@@ -40,6 +41,7 @@ const appComponents = {
   browser: BrowserApp,
   settings: SettingsApp,
   monitor: MonitorApp,
+  filemanager: FilemanagerApp,
 };
 
 export default function Desktop() {
@@ -74,10 +76,15 @@ export default function Desktop() {
   // Create services for enhanced apps
   const createAppServices = (app) => {
     if (app.id === 'notes') {
-      const topBarService = new TopBarService(app.id, app.name, '/icons/notes.png');
+      const topBarService = new TopBarService(
+        app.id,
+        app.name,
+        '/icons/notes.png',
+      );
       const dropdownService = new TopBarDropdownService();
-      const keyShortcutService = new WindowTopBarKeyShortcutRegistrationService();
-      
+      const keyShortcutService =
+        new WindowTopBarKeyShortcutRegistrationService();
+
       // Pre-populate dropdowns to avoid delay
       const menuHandlers = {
         onNew: () => {},
@@ -115,21 +122,26 @@ export default function Desktop() {
         onCopyStyledText: () => {},
         onFindInRange: () => {},
         hasChanges: false,
-        hasSelection: false
+        hasSelection: false,
       };
-      
+
       const fileDropdown = dropdownService.createFileDropdown(menuHandlers);
       const editDropdown = dropdownService.createEditDropdown(menuHandlers);
       const searchDropdown = dropdownService.createSearchDropdown(menuHandlers);
       dropdownService.addDropdown(fileDropdown.label, fileDropdown.items);
       dropdownService.addDropdown(editDropdown.label, editDropdown.items);
       dropdownService.addDropdown(searchDropdown.label, searchDropdown.items);
-      
+
       const infoService = new TopBarInfoAboutService({
-        onShowAbout: () => {}
+        onShowAbout: () => {},
       });
-      
-      return { topBarService, dropdownService, infoService, keyShortcutService };
+
+      return {
+        topBarService,
+        dropdownService,
+        infoService,
+        keyShortcutService,
+      };
     }
     return null;
   };
@@ -137,14 +149,14 @@ export default function Desktop() {
   const renderWindow = (app) => {
     const services = createAppServices(app);
     const AppComponent = appComponents[app.component];
-    
+
     if (!AppComponent) return <div key={app.id}>App not found</div>;
-    
+
     if (services) {
       return (
-        <EnhancedWindow 
-          key={app.id} 
-          app={app} 
+        <EnhancedWindow
+          key={app.id}
+          app={app}
           topBarService={services.topBarService}
           dropdownService={services.dropdownService}
           infoService={services.infoService}
