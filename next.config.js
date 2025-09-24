@@ -4,8 +4,12 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:3001/api/:path*'
+        source: '/backgrounds/:path*',
+        destination: '/backgrounds/:path*',
+      },
+      {
+        source: '/icons/:path*',
+        destination: '/icons/:path*',
       }
     ];
   }
