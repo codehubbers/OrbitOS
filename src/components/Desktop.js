@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 
 import AppIcon from './AppIcon';
 import Window from './Window';
 import EnhancedWindow from './EnhancedWindow';
 import Taskbar from './Taskbar';
+import AvatarEditor from './AvatarEditor';
 import TopBarService from '@/system/services/TopBarService';
 import TopBarDropdownService from '@/system/services/TopBarDropdownService';
 import TopBarInfoAboutService from '@/system/services/TopBarInfoAboutService';
@@ -34,7 +36,9 @@ export default function Desktop() {
   const { state } = useApp();
   const { theme } = useTheme();
   const { wallpaper } = useSettings();
+  const { user, refreshUser } = useAuth();
   const [appPositions, setAppPositions] = useState({});
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
 
   const desktopApps = AppRegistry.getAllApps();
 
@@ -144,7 +148,40 @@ export default function Desktop() {
       {state.openApps.map((app) => renderWindow(app))}
 
       {/* Taskbar */}
-      <Taskbar />
+      <Taskbar 
+        onAvatarEdit={() => setShowAvatarEditor(true)}
+      />
+      
+      {/* Avatar Editor */}
+      {showAvatarEditor && (
+        <AvatarEditor
+          currentAvatar={user?.avatar}
+          onSave={async (avatarData) => {
+            try {
+              const response = await fetch('/api/users/avatar', {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ avatar: avatarData }),
+              });
+              
+              if (!response.ok) {
+                throw new Error('Failed to save avatar');
+              }
+              
+              console.log('Avatar saved successfully, refreshing user...');
+              setShowAvatarEditor(false);
+              // Refresh user data to show new avatar
+              await refreshUser();
+              console.log('User refreshed, new avatar should appear');
+            } catch (error) {
+              throw error; // Let AvatarEditor handle the error
+            }
+          }}
+          onClose={() => setShowAvatarEditor(false)}
+        />
+      )}
     </div>
   );
 }

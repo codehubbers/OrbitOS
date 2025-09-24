@@ -22,9 +22,33 @@ export function SettingsProvider({ children }) {
     }
   }, []);
 
-  const changeWallpaper = (newWallpaper) => {
+  const changeWallpaper = async (newWallpaper) => {
+    // Save locally first
     localStorage.setItem('orbitos_wallpaper', newWallpaper);
     setWallpaper(newWallpaper);
+    
+    // Save to server
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const { user } = await response.json();
+        
+        const updatedPreferences = {
+          ...user.preferences,
+          wallpaper: newWallpaper
+        };
+        
+        await fetch('/api/users/preferences', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ preferences: updatedPreferences }),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save preferences to server:', error);
+    }
   };
 
   // --- CRITICAL PART ---
