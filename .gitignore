@@ -1,6 +1,7 @@
 git.sh
 .ssh
 node_modules/
+setup.sh
 .git/
 next/
 .vscode/
