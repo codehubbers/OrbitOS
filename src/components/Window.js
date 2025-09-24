@@ -63,25 +63,34 @@ export default function Window({ app, children }) {
           onMouseLeave={handleMouseUp}
         >
           <div
-            className={`${theme.window.header} px-4 py-2 flex justify-between items-center window-drag`}
+            className={`${theme.window.header} px-3 py-2 flex justify-between items-center window-drag border-b`}
+            style={{ height: '32px' }}
             onMouseDown={handleMouseDown}
           >
-            <span className={`font-medium ${theme.window.text}`}>
+            <span className={`font-medium text-sm ${theme.window.text}`}>
               {app.name}
             </span>
-            <div className="flex space-x-2">
+            <div className="flex items-center gap-1">
               <button
                 onClick={handleMinimize}
-                className="w-3 h-3 bg-yellow-500 rounded-full hover:bg-yellow-600"
+                className="w-3 h-3 bg-orange-500 rounded-full hover:bg-orange-600"
+                title="Minimize"
+              />
+              <button
+                className="w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-600"
+                title="Maximize"
               />
               <button
                 onClick={handleClose}
                 className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-600"
+                title="Close"
               />
             </div>
           </div>
-          <div className={`p-4 h-full overflow-auto ${theme.window.content}`}>
-            {children}
+          <div className="flex-1 overflow-hidden">
+            <div className={`p-4 h-full overflow-auto ${theme.window.content}`}>
+              {children}
+            </div>
           </div>
         </motion.div>
       )}
