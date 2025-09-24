@@ -1,8 +1,8 @@
-export const darkTheme = {
-  id: 'dark',
-  name: 'Dark Theme',
+export const highContrastTheme = {
+  id: 'highContrast',
+  name: 'High Contrast Theme',
   desktop: 'bg-black',
-  taskbar: 'bg-black/80 border-t border-white',
+  taskbar: 'bg-black border-t border-white',
   window: { bg: 'bg-black', border: 'border-white', header: 'bg-black border-b border-white', text: 'text-white', content: 'text-white bg-black' },
   startMenu: 'bg-black border border-white',
   glass: 'bg-black/50 border border-white',
