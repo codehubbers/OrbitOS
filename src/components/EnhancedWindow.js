@@ -103,7 +103,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
         >
           {/* Top Window Bar */}
           <div
-            className={`${theme.window.header} px-3 py-2 flex justify-between items-center window-drag border-b`}
+            className={`${theme.window.header} px-3 py-2 flex justify-between items-center window-drag border-b ${theme.app.border}`}
             style={{ height: '32px' }}
             onMouseDown={handleMouseDown}
           >
@@ -135,7 +135,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
 
           {/* Menu Bar */}
           {dropdownService && (
-            <div className={`${theme.window.header} px-3 py-1 flex items-center gap-4 border-b text-sm relative`}>
+            <div className={`${theme.app.toolbar} px-3 py-1 flex items-center gap-4 text-sm relative`}>
               {dropdownService.getDropdowns().map((dropdown) => (
                 <div key={dropdown.label} className="relative">
                   <button
@@ -145,18 +145,18 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                       e.preventDefault();
                       toggleDropdown(dropdown.label);
                     }}
-                    className={`px-2 py-1 rounded hover:bg-gray-100 ${
-                      activeDropdown === dropdown.label ? 'bg-gray-100' : ''
+                    className={`px-2 py-1 rounded ${theme.app.toolbarButton} ${
+                      activeDropdown === dropdown.label ? theme.app.toolbar_button_active : ''
                     }`}
                   >
                     {dropdown.label}
                   </button>
                   
                   {activeDropdown === dropdown.label && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg min-w-48 z-50">
+                    <div className={`absolute top-full left-0 mt-1 rounded shadow-lg min-w-48 z-50 py-1 ${theme.app.dropdown_bg}`}>
                       {dropdown.items.map((item, index) => (
                         item.type === 'separator' ? (
-                          <hr key={index} className="my-1" />
+                          <hr key={index} className={`my-1 ${theme.app.border}`} />
                         ) : (
                           <button
                             key={index}
@@ -167,13 +167,13 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                               handleMenuItemClick(item.action);
                             }}
                             disabled={item.disabled}
-                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 flex justify-between items-center ${
-                              item.disabled ? 'text-gray-400 cursor-not-allowed' : ''
+                            className={`w-full text-left px-3 py-2 flex justify-between items-center ${theme.app.text} ${
+                              item.disabled ? 'opacity-50 cursor-not-allowed' : theme.app.dropdown_item_hover
                             }`}
                           >
                             <span>{item.label}</span>
                             {item.shortcut && (
-                              <span className="text-xs text-gray-500 ml-4">{item.shortcut}</span>
+                              <span className={`text-xs ml-4 ${theme.app.text_subtle}`}>{item.shortcut}</span>
                             )}
                           </button>
                         )
@@ -185,11 +185,11 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
               
               {/* Markdown Formatting Buttons */}
               {app.id === 'notes' && markdownActions && (
-                <div className="flex items-center gap-1 ml-4 border-l pl-4">
+                <div className={`flex items-center gap-1 ml-4 border-l pl-4 ${theme.app.border}`}>
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={markdownActions.handleBold}
-                    className="p-1 hover:bg-gray-100 rounded font-bold text-xs"
+                    className={`p-1 rounded font-bold text-xs ${theme.app.toolbarButton}`}
                     title="Bold"
                   >
                     B
@@ -197,7 +197,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={markdownActions.handleItalic}
-                    className="p-1 hover:bg-gray-100 rounded italic text-xs"
+                    className={`p-1 rounded italic text-xs ${theme.app.toolbarButton}`}
                     title="Italic"
                   >
                     I
@@ -205,7 +205,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={markdownActions.handleStrikethrough}
-                    className="p-1 hover:bg-gray-100 rounded line-through text-xs"
+                    className={`p-1 rounded line-through text-xs ${theme.app.toolbarButton}`}
                     title="Strikethrough"
                   >
                     S
@@ -213,7 +213,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={markdownActions.handleCode}
-                    className="p-1 hover:bg-gray-100 rounded font-mono bg-gray-50 text-xs"
+                    className={`p-1 rounded font-mono text-xs ${theme.app.toolbarButton}`}
                     title="Code"
                   >
                     &lt;/&gt;
@@ -221,7 +221,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={markdownActions.handleHeader}
-                    className="p-1 hover:bg-gray-100 rounded font-bold text-xs"
+                    className={`p-1 rounded font-bold text-xs ${theme.app.toolbarButton}`}
                     title="Header"
                   >
                     H
@@ -237,7 +237,7 @@ export default function EnhancedWindow({ app, children, topBarService, dropdownS
                       e.preventDefault();
                       infoService.getInfoIcon().onClick();
                     }}
-                    className="p-1 hover:bg-gray-100 rounded"
+                    className={`p-1 rounded ${theme.app.toolbarButton}`}
                     title="About"
                   >
                     <InformationCircleIcon className="w-4 h-4" />
