@@ -9,6 +9,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useWindowResize } from '@/hooks/useWindowResize';
 import ResizeHandles from '@/system/components/ResizeHandles';
+import SnapService from '@/system/services/SnapService';
 
 /**
  * Window component with advanced resize functionality
@@ -22,6 +23,11 @@ export default function Window({ app, children }) {
   // Local state for dragging
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ startX: 0, startY: 0 });
+  const [snapPreview, setSnapPreview] = useState(null);
+
+  // Snap-to-edge constants
+  const TASKBAR_HEIGHT = 64;
+  const SNAP_THRESHOLD = 32; // pixels
 
   // Window resize hook with context integration
   const {
@@ -134,8 +140,17 @@ export default function Window({ app, children }) {
         };
 
         updateWindow(size, constrainedPosition);
+
+        // Update snap preview overlay
+        const preview = SnapService.getPreviewLayout(
+          constrainedPosition,
+          size,
+          { threshold: SNAP_THRESHOLD, taskbarHeight: TASKBAR_HEIGHT },
+        );
+        setSnapPreview(preview ? { layout: preview } : null);
       } else if (isResizing) {
         handleResize(e);
+        setSnapPreview(null);
       }
     },
     [
@@ -152,14 +167,48 @@ export default function Window({ app, children }) {
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
-      // Update context with final position
-      dispatch({
-        type: 'MOVE_APP',
-        payload: {
-          id: app.id,
-          position: position,
-        },
+      // Evaluate snap-to-edge on drag end via SnapService
+      const region = SnapService.getRegion(position, size, {
+        threshold: SNAP_THRESHOLD,
+        taskbarHeight: TASKBAR_HEIGHT,
       });
+      if (region) {
+        const layout = SnapService.getLayout(region, {
+          taskbarHeight: TASKBAR_HEIGHT,
+        });
+        if (layout?.maximize) {
+          if (!app.maximized) {
+            dispatch({ type: 'MAXIMIZE_APP', payload: { id: app.id } });
+          }
+        } else if (layout?.size && layout?.position) {
+          // Ensure we are not in maximized state
+          if (app.maximized) {
+            // Restore first by toggling maximize off
+            dispatch({ type: 'MAXIMIZE_APP', payload: { id: app.id } });
+          }
+          // Sync local resize state so the UI updates immediately
+          updateWindow(layout.size, layout.position);
+          dispatch({
+            type: 'RESIZE_APP',
+            payload: {
+              id: app.id,
+              size: layout.size,
+              position: layout.position,
+            },
+          });
+        }
+      } else {
+        // No snap target: commit final position
+        dispatch({
+          type: 'MOVE_APP',
+          payload: {
+            id: app.id,
+            position: position,
+          },
+        });
+      }
+      // Clear preview after mouse up
+      setSnapPreview(null);
     }
     if (isResizing) {
       endResize();
@@ -169,9 +218,14 @@ export default function Window({ app, children }) {
     isResizing,
     position.x,
     position.y,
+    size.width,
+    size.height,
+    app.maximized,
     dispatch,
     app.id,
     endResize,
+    position,
+    size,
   ]);
 
   /** Handle window close */
@@ -234,6 +288,19 @@ export default function Window({ app, children }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
+      {snapPreview?.layout && (
+        <div className="fixed inset-0 pointer-events-none z-[9998]">
+          <div
+            className="absolute border-2 border-sky-400/80 bg-sky-400/10 shadow-[0_0_0_9999px_rgba(0,0,0,0.1)]"
+            style={{
+              left: snapPreview.layout.position.x,
+              top: snapPreview.layout.position.y,
+              width: snapPreview.layout.size.width,
+              height: snapPreview.layout.size.height,
+            }}
+          />
+        </div>
+      )}
       {/* Title Bar */}
       <div
         className="window-title-bar"
