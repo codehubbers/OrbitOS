@@ -23,6 +23,7 @@ import BrowserApp from '@/pages/apps/browser';
 import SettingsApp from '@/pages/apps/settings';
 import MonitorApp from '@/pages/apps/monitor';
 import FilemanagerApp from '@/pages/apps/filemanager';
+import Calculator from '@/pages/apps/calculator';
 
 const appComponents = {
   notes: NotesApp,
@@ -30,6 +31,7 @@ const appComponents = {
   settings: SettingsApp,
   monitor: MonitorApp,
   filemanager: FilemanagerApp,
+  calculator: Calculator,
 };
 
 export default function Desktop() {
@@ -60,35 +62,69 @@ export default function Desktop() {
 
   const createAppServices = (app) => {
     if (app.id === 'notes') {
-      const topBarService = new TopBarService(app.id, app.name, '/icons/notes.png');
+      const topBarService = new TopBarService(
+        app.id,
+        app.name,
+        '/icons/notes.png',
+      );
       const dropdownService = new TopBarDropdownService();
-      const keyShortcutService = new WindowTopBarKeyShortcutRegistrationService();
-      
+      const keyShortcutService =
+        new WindowTopBarKeyShortcutRegistrationService();
+
       const menuHandlers = {
-        onNew: () => {}, onOpen: () => {}, onOpenLocal: () => {}, onSave: () => {},
-        onSaveAs: () => {}, onPrint: () => window.print(), onUndo: () => document.execCommand('undo'),
-        onRedo: () => document.execCommand('redo'), onCut: () => document.execCommand('cut'),
-        onCopy: () => document.execCommand('copy'), onPaste: () => document.execCommand('paste'),
-        onFind: () => {}, onReplace: () => {}, onFindInFiles: () => {}, onFindNext: () => {},
-        onFindPrevious: () => {}, onSelectFindNext: () => {}, onSelectFindPrevious: () => {},
-        onFindVolatileNext: () => {}, onFindVolatilePrevious: () => {}, onIncrementalSearch: () => {},
-        onSearchResults: () => {}, onNextSearchResult: () => {}, onPreviousSearchResult: () => {},
-        onGoTo: () => {}, onGoToMatchingBrace: () => {}, onSelectBetween: () => {},
-        onStyleAllOccurrences: () => {}, onStyleOneToken: () => {}, onClearStyle: () => {},
-        onJumpUp: () => {}, onJumpDown: () => {}, onCopyStyledText: () => {}, onFindInRange: () => {},
-        hasChanges: false, hasSelection: false
+        onNew: () => {},
+        onOpen: () => {},
+        onOpenLocal: () => {},
+        onSave: () => {},
+        onSaveAs: () => {},
+        onPrint: () => window.print(),
+        onUndo: () => document.execCommand('undo'),
+        onRedo: () => document.execCommand('redo'),
+        onCut: () => document.execCommand('cut'),
+        onCopy: () => document.execCommand('copy'),
+        onPaste: () => document.execCommand('paste'),
+        onFind: () => {},
+        onReplace: () => {},
+        onFindInFiles: () => {},
+        onFindNext: () => {},
+        onFindPrevious: () => {},
+        onSelectFindNext: () => {},
+        onSelectFindPrevious: () => {},
+        onFindVolatileNext: () => {},
+        onFindVolatilePrevious: () => {},
+        onIncrementalSearch: () => {},
+        onSearchResults: () => {},
+        onNextSearchResult: () => {},
+        onPreviousSearchResult: () => {},
+        onGoTo: () => {},
+        onGoToMatchingBrace: () => {},
+        onSelectBetween: () => {},
+        onStyleAllOccurrences: () => {},
+        onStyleOneToken: () => {},
+        onClearStyle: () => {},
+        onJumpUp: () => {},
+        onJumpDown: () => {},
+        onCopyStyledText: () => {},
+        onFindInRange: () => {},
+        hasChanges: false,
+        hasSelection: false,
       };
-      
+
       const fileDropdown = dropdownService.createFileDropdown(menuHandlers);
       const editDropdown = dropdownService.createEditDropdown(menuHandlers);
       const searchDropdown = dropdownService.createSearchDropdown(menuHandlers);
       dropdownService.addDropdown(fileDropdown.label, fileDropdown.items);
       dropdownService.addDropdown(editDropdown.label, editDropdown.items);
       dropdownService.addDropdown(searchDropdown.label, searchDropdown.items);
-      
+
       const infoService = new TopBarInfoAboutService({ onShowAbout: () => {} });
-      
-      return { topBarService, dropdownService, infoService, keyShortcutService };
+
+      return {
+        topBarService,
+        dropdownService,
+        infoService,
+        keyShortcutService,
+      };
     }
     return null;
   };
@@ -96,14 +132,17 @@ export default function Desktop() {
   const renderWindow = (app) => {
     const services = createAppServices(app);
     const AppComponent = appComponents[app.component];
-    
-    if (!AppComponent) return <div key={app.id}>App component not found for: {app.component}</div>;
-    
+
+    if (!AppComponent)
+      return (
+        <div key={app.id}>App component not found for: {app.component}</div>
+      );
+
     if (services) {
       return (
-        <EnhancedWindow 
-          key={app.id} 
-          app={app} 
+        <EnhancedWindow
+          key={app.id}
+          app={app}
           topBarService={services.topBarService}
           dropdownService={services.dropdownService}
           infoService={services.infoService}
@@ -148,10 +187,8 @@ export default function Desktop() {
       {state.openApps.map((app) => renderWindow(app))}
 
       {/* Taskbar */}
-      <Taskbar 
-        onAvatarEdit={() => setShowAvatarEditor(true)}
-      />
-      
+      <Taskbar onAvatarEdit={() => setShowAvatarEditor(true)} />
+
       {/* Avatar Editor */}
       {showAvatarEditor && (
         <AvatarEditor
@@ -165,11 +202,11 @@ export default function Desktop() {
                 },
                 body: JSON.stringify({ avatar: avatarData }),
               });
-              
+
               if (!response.ok) {
                 throw new Error('Failed to save avatar');
               }
-              
+
               console.log('Avatar saved successfully, refreshing user...');
               setShowAvatarEditor(false);
               // Refresh user data to show new avatar
