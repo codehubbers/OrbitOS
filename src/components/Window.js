@@ -1,195 +1,99 @@
-/**
- * @fileoverview Window Component - Main window component with resize functionality
- *
- * Renders a draggable and resizable window with modern window management features.
- * Integrates Strategy Pattern for resize operations with complete window experience.
- */
-
-import { useState, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
-import { useWindowResize } from '@/hooks/useWindowResize';
-import ResizeHandles from '@/system/components/ResizeHandles';
-import SnapPreview from '@/system/components/SnapPreview';
-import useWindowSnap from '@/hooks/useWindowSnap';
-import useWindowDrag from '@/hooks/useWindowDrag';
-import WindowTitleBar from '@/system/components/WindowTitleBar';
-import {
-  TASKBAR_HEIGHT,
-  SNAP_THRESHOLD,
-  DEFAULT_CONSTRAINTS,
-  DEFAULT_WINDOW_POSITION,
-  DEFAULT_WINDOW_SIZE,
-} from '@/system/config/window';
+import { useTheme } from '@/context/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * Window component with advanced resize functionality
- * @param {Object} props - Component props
- * @returns {JSX.Element} Window component
- */
 export default function Window({ app, children }) {
   const { dispatch } = useApp();
-
-  const [snapPreview, setSnapPreview] = useState(null);
-
-  // Window resize hook with context integration
-  const {
-    size: resizeSize,
-    position: resizePosition,
-    isResizing,
-    resizeDirection,
-    startResize,
-    handleResize,
-    endResize,
-    updateWindow,
-  } = useWindowResize({
-    size: app.size || DEFAULT_WINDOW_SIZE,
-    position: app.position || DEFAULT_WINDOW_POSITION,
-    constraints: {
-      minSize: DEFAULT_CONSTRAINTS.minSize,
-      maxSize: DEFAULT_CONSTRAINTS.maxSize,
-    },
-    onResize: (newState, direction) => {
-      // Update global context with debounced resize
-      dispatch({
-        type: 'RESIZE_APP',
-        payload: {
-          id: app.id,
-          size: newState.size,
-          position: newState.position,
-        },
-      });
-    },
-    onResizeEnd: (finalState) => {
-      // Final context update when resize ends
-      dispatch({
-        type: 'RESIZE_APP',
-        payload: {
-          id: app.id,
-          size: finalState.size,
-          position: finalState.position,
-        },
-      });
-    },
+  const { theme } = useTheme();
+  const [position, setPosition] = useState({
+    x: 100 + Math.random() * 200,
+    y: 100 + Math.random() * 100,
   });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0 });
 
-  // Snap hook (requires updateWindow from useWindowResize)
-  const {
-    snapPreview: hookPreview,
-    updatePreviewFor,
-    applySnapIfAny,
-    clearPreview,
-  } = useWindowSnap({
-    taskbarHeight: TASKBAR_HEIGHT,
-    threshold: SNAP_THRESHOLD,
-    updateWindow,
-    dispatch,
-    appId: app.id,
-    isMaximized: app.maximized,
-  });
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX - position.x,
+      startY: e.clientY - position.y,
+    };
+    dispatch({ type: 'SET_ACTIVE_APP', payload: app.id });
+  };
 
-  // Memoize size and position to prevent unnecessary re-renders
-  // Use app.size/position when maximized, otherwise use resize hook values
-  const size = useMemo(
-    () => (app.maximized ? app.size : resizeSize),
-    [
-      app.maximized,
-      app.size.width,
-      app.size.height,
-      resizeSize.width,
-      resizeSize.height,
-    ],
-  );
-  const position = useMemo(
-    () => (app.maximized ? app.position : resizePosition),
-    [
-      app.maximized,
-      app.position.x,
-      app.position.y,
-      resizePosition.x,
-      resizePosition.y,
-    ],
-  );
-
-  // Drag hook
-  const { isDragging, handleMouseDown, handleMouseMove, handleMouseUp } =
-    useWindowDrag({
-      app,
-      position,
-      size,
-      isResizing,
-      handleResize,
-      endResize,
-      updateWindow,
-      dispatch,
-      applySnapIfAny,
-      clearPreview,
-      updatePreviewFor,
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragRef.current.startX,
+      y: e.clientY - dragRef.current.startY,
     });
+  };
 
-  /** Handle window close */
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   const handleClose = () => {
     dispatch({ type: 'CLOSE_APP', payload: app.id });
   };
 
-  /** Handle window minimize */
   const handleMinimize = () => {
-    dispatch({ type: 'MINIMIZE_APP', payload: app.id });
+    dispatch({ type: 'MINIMIZE_APP', payload: { appId: app.id } });
   };
-
-  /** Handle window maximize/restore */
-  const handleMaximize = () => {
-    dispatch({ type: 'MAXIMIZE_APP', payload: { id: app.id } });
-  };
-
-  /** Handle double click on title bar for maximize/restore */
-  const handleTitleBarDoubleClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleMaximize();
-  };
-
-  /** Handle resize start */
-  const handleResizeStart = (direction, event) => {
-    startResize(direction, event);
-  };
-
-  // Global listeners handled in useWindowDrag
-
-  // Don't render if minimized
-  if (app.minimized) return null;
 
   return (
-    <div
-      className={`absolute window-container ${isResizing ? 'window-resizing' : ''} ${app.maximized ? 'window-maximize-transition' : 'window-resize-transition'}`}
-      style={{
-        left: position.x,
-        top: position.y,
-        width: size.width,
-        height: size.height,
-        zIndex: app.zIndex,
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      <SnapPreview layout={hookPreview || snapPreview} />
-      <WindowTitleBar
-        app={app}
-        onMouseDown={handleMouseDown}
-        onDoubleClick={handleTitleBarDoubleClick}
-        onMinimize={handleMinimize}
-        onMaximize={handleMaximize}
-        onClose={handleClose}
-      />
-
-      {/* Content Area */}
-      <div className="window-content">{children}</div>
-
-      {/* Resize Handles */}
-      <ResizeHandles
-        onResizeStart={handleResizeStart}
-        disabled={app.maximized}
-        showHandles={!app.maximized}
-      />
-    </div>
+    <AnimatePresence>
+      {!app.isMinimized && (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0, y: 50 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.8, opacity: 0, y: 50 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className={`absolute ${theme.window.bg} ${theme.window.border} border rounded-lg shadow-lg overflow-hidden`}
+          style={{
+            left: position.x,
+            top: position.y,
+            width: 600,
+            height: 400,
+            zIndex: app.zIndex,
+          }}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <div
+            className={`${theme.window.header} px-3 py-2 flex justify-between items-center window-drag border-b`}
+            style={{ height: '32px' }}
+            onMouseDown={handleMouseDown}
+          >
+            <span className={`font-medium text-sm ${theme.window.text}`}>
+              {app.name}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleMinimize}
+                className="w-3 h-3 bg-yellow-500 hover:bg-yellow-600 rounded-full transition-colors"
+                title="Minimize"
+              />
+              <button
+                className="w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-600"
+                title="Maximize"
+              />
+              <button
+                onClick={handleClose}
+                className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-600"
+                title="Close"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <div className={`p-4 h-full overflow-auto ${theme.window.content}`}>
+              {children}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
