@@ -5,6 +5,7 @@ import SettingsApp from '../apps/SettingsApp';
 import BrowserApp from '../apps/BrowserApp';
 import MonitorApp from '../apps/MonitorApp';
 import FilemanagerApp from '../apps/FilemanagerApp';
+import Calculator from '../apps/Calculator';
 
 /**
  * A central registry for all available applications.
@@ -13,7 +14,14 @@ import FilemanagerApp from '../apps/FilemanagerApp';
  */
 class AppRegistry {
   constructor() {
-    this.apps = [NotesApp, SettingsApp, BrowserApp, MonitorApp, FilemanagerApp];
+    this.apps = [
+      NotesApp,
+      SettingsApp,
+      BrowserApp,
+      MonitorApp,
+      FilemanagerApp,
+      Calculator,
+    ];
   }
 
   /**
