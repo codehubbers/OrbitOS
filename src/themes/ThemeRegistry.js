@@ -3,7 +3,7 @@
 // Import the themes from their dedicated files.
 import { lightTheme } from './lightTheme';
 import { darkTheme } from './darkTheme';
-import { highContrastTheme } from './darkTheme';
+import { highContrastTheme } from './highContrastTheme';
 
 class ThemeRegistry {
   constructor() {
@@ -40,6 +40,11 @@ class ThemeRegistry {
         @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideOutToRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
         @keyframes shrinkProgress { from { width: 100%; } to { width: 0%; } }
+        .auth-form { backdrop-filter: blur(20px); background: rgba(0, 0, 0, 0.3); }
+        .auth-input:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+        .password-strength-weak { background: linear-gradient(90deg, #ef4444 0%, #f87171 100%); }
+        .password-strength-medium { background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%); }
+        .password-strength-strong { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); }
       `;
       document.head.appendChild(style);
     }

@@ -1,4 +1,4 @@
-export const highContrastTheme = {
+export const darkTheme = {
   id: 'dark',
   name: 'Dark Theme',
   desktop: 'bg-black',

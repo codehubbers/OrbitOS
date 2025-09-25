@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import AppRegistry from '@/system/services/AppRegistry';
+import UserProfileTooltip from './UserProfileTooltip';
+import UserProfile from './UserProfile';
+import AvatarEditor from './AvatarEditor';
 import { motion } from 'framer-motion';
 
 // --- Style Constants ---
@@ -399,9 +403,12 @@ const Clock = () => {
 
 // --- The Main Taskbar Component ---
 
-export default function Taskbar() {
+export default function Taskbar({ onAvatarEdit }) {
   const { state, dispatch } = useApp();
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const [showUserTooltip, setShowUserTooltip] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const availableApps = AppRegistry.getAllApps();
 
   const openApp = (app) => {
@@ -429,7 +436,47 @@ export default function Taskbar() {
           theme={theme}
         />
       </div>
-      <Clock />
+      <div className="flex items-center space-x-4">
+        <div className="relative">
+          <motion.button
+            onMouseEnter={() => setShowUserTooltip(true)}
+            onMouseLeave={() => setShowUserTooltip(false)}
+            onClick={() => setShowUserProfile(true)}
+            className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            title={`Signed in as ${user?.displayName || user?.username}`}
+          >
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white font-semibold text-sm">
+                  {user?.displayName?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="text-white text-sm font-medium hidden sm:block">
+              {user?.displayName || user?.username}
+            </span>
+          </motion.button>
+          <UserProfileTooltip show={showUserTooltip} />
+        </div>
+        <div className={separatorStyle}></div>
+        <Clock />
+      </div>
+      
+      {showUserProfile && (
+        <UserProfile 
+          onClose={() => setShowUserProfile(false)}
+          onAvatarEdit={() => {
+            setShowUserProfile(false);
+            if (onAvatarEdit) onAvatarEdit();
+          }}
+        />
+      )}
+      
+
+
     </div>
   );
 }
