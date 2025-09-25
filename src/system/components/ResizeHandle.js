@@ -62,7 +62,8 @@ const ResizeHandle = ({
    * @returns {string} CSS class string
    */
   const getHandleClasses = (direction) => {
-    const baseClasses = 'absolute bg-blue-500/20 hover:bg-blue-500/40 transition-colors duration-150 border-2 border-blue-500/40 pointer-events-auto z-50';
+    const baseClasses =
+      'absolute bg-blue-500/20 hover:bg-blue-500/40 transition-colors duration-150 border-2 border-blue-500/40 pointer-events-auto z-50';
     const sizeClasses = {
       'top-left': 'w-6 h-6 top-0 left-0',
       'top-right': 'w-6 h-6 top-0 right-0',
@@ -82,8 +83,6 @@ const ResizeHandle = ({
    * @param {MouseEvent} event - Mouse event
    */
   const handleMouseDown = (event) => {
-    console.log('ResizeHandle: Mouse down on', direction, 'disabled:', disabled);
-    
     if (disabled) return;
 
     // Prevent default behavior
@@ -92,13 +91,10 @@ const ResizeHandle = ({
 
     // Call the parent handler
     if (onMouseDown) {
-      console.log('ResizeHandle: Calling onMouseDown for', direction);
       onMouseDown(direction, event);
     } else {
-      console.log('ResizeHandle: No onMouseDown handler provided');
     }
   };
-
 
   return (
     <div
@@ -107,34 +103,67 @@ const ResizeHandle = ({
         cursor: getCursor(direction),
         backgroundColor: 'transparent',
         border: 'none',
-        zIndex: direction.includes('top') || direction.includes('bottom') || 
-                direction.includes('left') || direction.includes('right') ? 9990 : 9999,
+        zIndex:
+          direction.includes('top') ||
+          direction.includes('bottom') ||
+          direction.includes('left') ||
+          direction.includes('right')
+            ? 9990
+            : 9999,
         pointerEvents: 'auto',
         // Corner handles - fixed size
-        ...(direction.includes('top') && direction.includes('left') && { 
-          top: '0', left: '0', width: '0.7rem', height: '0.7rem' 
-        }),
-        ...(direction.includes('top') && direction.includes('right') && { 
-          top: '0', right: '0', width: '0.7rem', height: '0.7rem' 
-        }),
-        ...(direction.includes('bottom') && direction.includes('left') && { 
-          bottom: '0', left: '0', width: '0.7rem', height: '0.7rem' 
-        }),
-        ...(direction.includes('bottom') && direction.includes('right') && { 
-          bottom: '0', right: '0', width: '0.7rem', height: '0.7rem' 
-        }),
+        ...(direction.includes('top') &&
+          direction.includes('left') && {
+            top: '0',
+            left: '0',
+            width: '0.7rem',
+            height: '0.7rem',
+          }),
+        ...(direction.includes('top') &&
+          direction.includes('right') && {
+            top: '0',
+            right: '0',
+            width: '0.7rem',
+            height: '0.7rem',
+          }),
+        ...(direction.includes('bottom') &&
+          direction.includes('left') && {
+            bottom: '0',
+            left: '0',
+            width: '0.7rem',
+            height: '0.7rem',
+          }),
+        ...(direction.includes('bottom') &&
+          direction.includes('right') && {
+            bottom: '0',
+            right: '0',
+            width: '0.7rem',
+            height: '0.7rem',
+          }),
         // Edge handles - full width/height
-        ...(direction === 'top' && { 
-          top: '0', left: '0.7rem', right: '0.7rem', height: '0.5rem' 
+        ...(direction === 'top' && {
+          top: '0',
+          left: '0.7rem',
+          right: '0.7rem',
+          height: '0.5rem',
         }),
-        ...(direction === 'bottom' && { 
-          bottom: '0', left: '0.7rem', right: '0.7rem', height: '0.5rem' 
+        ...(direction === 'bottom' && {
+          bottom: '0',
+          left: '0.7rem',
+          right: '0.7rem',
+          height: '0.5rem',
         }),
-        ...(direction === 'left' && { 
-          left: '0', top: '0.7rem', bottom: '0.7rem', width: '0.5rem' 
+        ...(direction === 'left' && {
+          left: '0',
+          top: '0.7rem',
+          bottom: '0.7rem',
+          width: '0.5rem',
         }),
-        ...(direction === 'right' && { 
-          right: '0', top: '0.7rem', bottom: '0.7rem', width: '0.5rem' 
+        ...(direction === 'right' && {
+          right: '0',
+          top: '0.7rem',
+          bottom: '0.7rem',
+          width: '0.5rem',
         }),
         ...style,
       }}
