@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "dev:all": "npm test && npm run dev",
     "test": "jest",
     "prepare": "husky",
     "format": "prettier --write .",

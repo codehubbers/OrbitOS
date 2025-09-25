@@ -26,6 +26,16 @@ jest.mock('../src/context/ThemeContext', () => ({
   }),
 }));
 
+// Mock the AuthContext
+jest.mock('../src/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 const Taskbar = require('../src/components/Taskbar').default;
 
 describe('Taskbar Hydration Error Fix', () => {
