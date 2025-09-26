@@ -1,5 +1,3 @@
- // src/components/Taskbar.js
-
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -114,16 +112,21 @@ const StartButtonAndMenu = ({ apps, onAppClick, theme }) => {
 /**
  * Displays the icons for all currently open applications.
  */
-const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme }) => (
+const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme, dispatch }) => (
   <div className="flex items-center space-x-1">
     {openApps.map((app) => {
-      const isActive = activeApp === app.id && !app.minimized;
-      const isMinimized = app.minimized;
+      const isActive = activeApp === app.id && !app.isMinimized;  // ✅ Use isMinimized
+      const isMinimized = app.isMinimized;  // ✅ Use isMinimized
       return (
         <motion.button
-          key={app.id}
-          onClick={() => onAppClick(app.id)}
-          className={`relative w-12 h-12 flex items-center justify-center ${theme.glass} rounded-xl shadow-lg hover:bg-white/20`}
+          onClick={() => {
+            if (app.isMinimized) {  // ✅ Add restore logic
+              dispatch({ type: 'RESTORE_APP', payload: { appId: app.id } });
+            }
+            onAppClick(app.id);
+          }}
+          className={`... ${isMinimized ? 'opacity-60' : ''}`}  // ✅ Add opacity for minimized
+
           whileHover={{ scale: 1.2, y: -5 }}
           whileTap={{ scale: 0.9 }}
           title={app.name}
@@ -134,7 +137,8 @@ const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme }) => (
               isActive
                 ? 'bg-white'
                 : isMinimized
-                  ? 'bg-orange-400'
+              ? 'bg-yellow-400'  // ✅ Use yellow for minimize indicator
+
                   : 'bg-gray-400'
             }`}
           />
@@ -434,7 +438,9 @@ export default function Taskbar({ onAvatarEdit }) {
           activeApp={state.activeApp}
           onAppClick={toggleApp}
           theme={theme}
+          dispatch={dispatch}  // ✅ Add dispatch prop for restore functionality
         />
+
       </div>
       <div className="flex items-center space-x-4">
         <div className="relative">
