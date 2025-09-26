@@ -44,7 +44,10 @@ export default function Window({ app, children }) {
 
   return (
     <AnimatePresence>
-      {!app.isMinimized && (
+{!app.isMinimized && (  // ✅ Use isMinimized
+
+className="w-3 h-3 bg-yellow-500 hover:bg-yellow-600 rounded-full transition-colors"  // ✅ Yellow button
+
         <motion.div
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -73,7 +76,8 @@ export default function Window({ app, children }) {
             <div className="flex items-center gap-1">
               <button
                 onClick={handleMinimize}
-                className="w-3 h-3 bg-yellow-500 hover:bg-yellow-600 rounded-full transition-colors"
+          className="w-3 h-3 bg-yellow-500 hover:bg-yellow-600 rounded-full transition-colors"
+
                 title="Minimize"
               />
               <button

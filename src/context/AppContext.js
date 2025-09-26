@@ -54,13 +54,14 @@ function appReducer(state, action) {
       return {
         ...state,
         openApps: state.openApps.map(app =>
-          app.id === action.payload.appId
-            ? { ...app, isMinimized: true }
+          app.id === action.payload.appId  // ✅ Consistent payload
+            ? { ...app, isMinimized: true }  // ✅ Use isMinimized
             : app
         ),
-        activeApp: state.activeApp?.id === action.payload.appId ? null : state.activeApp
+        activeApp: state.activeApp === action.payload.appId ? null : state.activeApp
       };
-    case 'RESTORE_APP':
+      
+    case 'RESTORE_APP':  // ✅ Add missing action
       return {
         ...state,
         openApps: state.openApps.map(app =>
@@ -68,8 +69,9 @@ function appReducer(state, action) {
             ? { ...app, isMinimized: false }
             : app
         ),
-        activeApp: state.openApps.find(app => app.id === action.payload.appId)
+        activeApp: action.payload.appId
       };
+
     case 'TOGGLE_APP':
       const targetApp = state.openApps.find((app) => app.id === action.payload);
       if (!targetApp) return state;

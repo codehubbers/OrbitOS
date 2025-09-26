@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function BrowserApp() {
+  const { theme } = useTheme();
   const [url, setUrl] = useState('https://www.google.com');
   const [currentUrl, setCurrentUrl] = useState('https://www.google.com');
 
@@ -15,11 +17,13 @@ export default function BrowserApp() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center space-x-2 p-2 border-b bg-gray-50">
+    <div className={`h-full flex flex-col ${theme.app.bg}`}>
+      <div
+        className={`flex items-center space-x-2 p-2 border-b ${theme.window.header}`}
+      >
         <button
           onClick={handleNavigate}
-          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className={`px-3 py-1 rounded ${theme.app.button}`}
         >
           Go
         </button>
@@ -28,7 +32,7 @@ export default function BrowserApp() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-1 px-3 py-1 border rounded"
+          className={`flex-1 px-3 py-1 border rounded ${theme.app.input}`}
           placeholder="Enter URL..."
         />
       </div>

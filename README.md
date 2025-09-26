@@ -1,6 +1,54 @@
+
 # Web OS Project
 
 A Web OS-style application built with Next.js and Node.js for group collaboration. Features a desktop-like interface with draggable windows, a taskbar, and multiple applications.
+
+## 🎨 How to Customize the Look and Feel
+
+We've built a powerful theme and wallpaper system to make it easy to change how OrbitOS looks.
+
+### Changing Colors & Styles (Theming)
+
+All colors, fonts, and styles are controlled by **theme files**. This is the best way to change the look of the entire OS.
+
+-   **Where to find them:** `src/themes/`
+-   **Files to edit:** `lightTheme.js` and `darkTheme.js`
+
+**Example: Editing the Taskbar Transparency**
+
+Open `src/themes/darkTheme.js` and find the `taskbar` property:
+
+```javascript
+// src/themes/darkTheme.js
+export const darkTheme = {
+  // ...
+  taskbar: 'bg-black/30 backdrop-blur-lg border-t border-white/20',
+  // ...
+};
+```
+
+-   `bg-black/30`: This is the color and transparency (black with 30% opacity). Change to `bg-black/50` to make it less transparent.
+-   `backdrop-blur-lg`: This is the "frosted glass" effect. Change to `backdrop-blur-xl` for more blur, or delete it for no blur.
+
+You can change any color for any component (windows, buttons, text) in these files!
+
+### Changing the Desktop Wallpaper
+
+There are two simple steps to add a new wallpaper:
+
+1.  **Add the Image:** Drop your new wallpaper image file into the `public/backgrounds/` folder.
+2.  **Register the Image:** Open `src/context/SettingsContext.js` and add the path to your new image to the `defaultWallpapers` array.
+
+```javascript
+// src/context/SettingsContext.js
+const defaultWallpapers = [
+  '/backgrounds/orbitos-default.jpg',
+  '/backgrounds/nebula.png',
+  '/backgrounds/my-new-cool-wallpaper.jpg', // <-- Add your new wallpaper here
+];
+```
+
+The new wallpaper will now appear in the Settings app automatically.
 
 ## Features
 
@@ -10,6 +58,8 @@ A Web OS-style application built with Next.js and Node.js for group collaboratio
 -   📝 Built-in applications (Notes, Browser, Settings)
 -   🔗 RESTful API for user and file management
 -   ⚡ Real-time state management with React Context
+-   🎨 **Powerful Theme Engine:** Easily change all colors and styles from central theme files.
+-   🖼️ **Customizable Wallpapers:** Change the desktop background from the Settings app.
 
 ## Tech Stack
 
@@ -26,6 +76,7 @@ web-os-project/
 ├── next.config.js
 ├── jsconfig.json
 ├── public/                 # For all static assets
+│   ├── backgrounds/        # Desktop wallpapers live here
 │   └── icon/
 │       └── notes.png       # App icons live here
 ├── src/
@@ -38,8 +89,10 @@ web-os-project/
 │   │   ├── Taskbar.js
 │   │   ├── Window.js
 │   │   └── AppIcon.js
-│   ├── context/            # React Context
-│   │   └── AppContext.js
+│   ├── context/            # React Context (Global State)
+│   │   ├── AppContext.js
+│   │   ├── SettingsContext.js
+│   │   └── ThemeContext.js
 │   ├── pages/              # Next.js routes (ONLY pages with URLs)
 │   │   ├── _app.js
 │   │   └── index.js        # The main desktop page
@@ -53,6 +106,9 @@ web-os-project/
 │   │   │   └── SettingsApp.js
 │   │   └── services/       # System-wide services
 │   │       └── AppRegistry.js
+│   ├── themes/             # THEME FILES (Edit all colors here)
+│   │   ├── lightTheme.js
+│   │   └── darkTheme.js
 │   └── server/             # Express backend (unchanged)
 │       ├── index.js
 │       ├── routes/
@@ -269,8 +325,9 @@ node index.js
 -   [ ] Real-time collaboration features
 -   [ ] Plugin system for custom apps
 -   [ ] Mobile responsive design
--   [ ] Dark/light theme switching
--   [ ] Notification system
+-   [x] **Dark/light theme switching**
+-   [x] **Notification system**
+-   [ ] More theme options (e.g., Solarized, Dracula)
 
 ## License
 
