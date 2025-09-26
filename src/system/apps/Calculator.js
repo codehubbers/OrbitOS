@@ -3,5 +3,5 @@ export default new App({
   id: 'calculator',
   name: 'Calculator',
   icon: '🧮',
-  component: 'Calculator',
+  component: 'calculator',
 });
