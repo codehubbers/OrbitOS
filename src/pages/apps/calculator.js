@@ -55,8 +55,14 @@ export default function Calculator() {
       );
     }
 
-    setWaitingForOperand(true);
-    setOperation(nextOperation);
+    if (nextOperation === '=') {
+      setWaitingForOperand(false);
+      setOperation('');
+      setPreviousValue(null);
+    } else {
+      setWaitingForOperand(true);
+      setOperation(nextOperation);
+    }
   };
 
   const calculate = (firstValue, secondValue, operation) => {
@@ -100,6 +106,7 @@ export default function Calculator() {
         break;
       case 'MR':
         setDisplay(String(memory));
+        setWaitingForOperand(false);
         setLastAction('Memory recalled');
         break;
       case 'M+':
@@ -181,7 +188,7 @@ export default function Calculator() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [display]);
+  }, [display, waitingForOperand, operation, previousValue]);
 
   return (
     <div className={`${theme.calculator.bg} p-6 h-full flex flex-col`}>
