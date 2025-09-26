@@ -32,6 +32,7 @@ const appComponents = {
   monitor: MonitorApp,
   filemanager: FilemanagerApp,
   calculator: Calculator,
+  Calculator: Calculator,
 };
 
 export default function Desktop() {
