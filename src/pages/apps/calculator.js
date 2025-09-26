@@ -1,105 +1,375 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function Calculator() {
-  const [expression, setExpression] = useState('');
+  const [display, setDisplay] = useState('0');
+  const [operation, setOperation] = useState('');
+  const [previousValue, setPreviousValue] = useState(null);
+  const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [memory, setMemory] = useState(0);
+  const [lastAction, setLastAction] = useState('');
+  const [pressedKey, setPressedKey] = useState(null);
   const { theme } = useTheme();
 
-  const handleClear = () => setExpression('');
-  const handleAllClear = () => { setExpression(''); setMemory(0); };
-  const handleBackspace = () => setExpression(prev => prev.slice(0, -1));
-
-  const safeEvaluate = (expr) => {
-    try {
-      const sanitized = expr.replace(/[^0-9+\-*/.() ]/g, '');
-      if (!sanitized) throw new Error('Invalid');
-      const result = Function(`"use strict"; return (${sanitized})`)();
-      if (!isFinite(result)) throw new Error('Invalid');
-      return result;
-    } catch { throw new Error('Error'); }
+  const inputNumber = (num) => {
+    if (waitingForOperand) {
+      setDisplay(String(num));
+      setWaitingForOperand(false);
+    } else {
+      setDisplay(display === '0' ? String(num) : display + num);
+    }
+    setLastAction(`${num}`);
   };
 
-  const handleEvaluate = () => {
-    if (!expression.trim()) return;
-    try {
-      const result = safeEvaluate(expression);
-      setExpression(String(result));
-    } catch {
-      setExpression('Error');
-      setTimeout(() => setExpression(''), 1500);
+  const inputDecimal = () => {
+    if (waitingForOperand) {
+      setDisplay('0.');
+      setWaitingForOperand(false);
+    } else if (display.indexOf('.') === -1) {
+      setDisplay(display + '.');
+    }
+  };
+
+  const clear = () => {
+    setDisplay('0');
+    setOperation('');
+    setPreviousValue(null);
+    setWaitingForOperand(false);
+    setLastAction('Clear');
+  };
+
+  const performOperation = (nextOperation) => {
+    const inputValue = parseFloat(display);
+
+    if (previousValue === null) {
+      setPreviousValue(inputValue);
+    } else if (operation) {
+      const currentValue = previousValue || 0;
+      const newValue = calculate(currentValue, inputValue, operation);
+
+      setDisplay(String(newValue));
+      setPreviousValue(newValue);
+      setLastAction(
+        `${currentValue} ${getOperationSymbol(operation)} ${inputValue} =`,
+      );
+    }
+
+    setWaitingForOperand(true);
+    setOperation(nextOperation);
+  };
+
+  const calculate = (firstValue, secondValue, operation) => {
+    switch (operation) {
+      case '+':
+        return firstValue + secondValue;
+      case '-':
+        return firstValue - secondValue;
+      case '*':
+        return firstValue * secondValue;
+      case '/':
+        return firstValue / secondValue;
+      case '=':
+        return secondValue;
+      default:
+        return secondValue;
+    }
+  };
+
+  const getOperationSymbol = (op) => {
+    switch (op) {
+      case '+':
+        return '+';
+      case '-':
+        return '−';
+      case '*':
+        return '×';
+      case '/':
+        return '÷';
+      default:
+        return op;
     }
   };
 
   const handleMemory = (action) => {
-    const current = parseFloat(expression) || 0;
+    const current = parseFloat(display) || 0;
     switch (action) {
-      case 'MC': setMemory(0); break;
-      case 'MR': setExpression(String(memory)); break;
-      case 'M+': setMemory(prev => prev + current); break;
-      case 'M-': setMemory(prev => prev - current); break;
+      case 'MC':
+        setMemory(0);
+        setLastAction('Memory cleared');
+        break;
+      case 'MR':
+        setDisplay(String(memory));
+        setLastAction('Memory recalled');
+        break;
+      case 'M+':
+        setMemory((prev) => prev + current);
+        setLastAction(`Memory + ${current}`);
+        break;
+      case 'M-':
+        setMemory((prev) => prev - current);
+        setLastAction(`Memory − ${current}`);
+        break;
     }
   };
 
-  const handleButtonClick = (btn) => {
-    if (expression === 'Error') setExpression('');
-    if (btn === '=') handleEvaluate();
-    else if (['+', '-', '*', '/'].includes(btn)) {
-      if (expression && !['+', '-', '*', '/'].includes(expression.slice(-1))) {
-        setExpression(prev => prev + btn);
-      } else if (!expression && btn === '-') {
-        setExpression(btn);
-      }
-    } else if (btn === '.') {
-      const lastNumber = expression.split(/[+\-*/]/).pop();
-      if (!lastNumber.includes('.')) setExpression(prev => prev + btn);
-    } else {
-      setExpression(prev => prev + btn);
-    }
+  const getButtonVariants = (buttonKey) => ({
+    hover: {
+      scale: 1.05,
+      y: -2,
+      transition: { duration: 0.15, ease: 'easeOut' },
+    },
+    tap: {
+      scale: 0.95,
+      y: 0,
+      transition: { duration: 0.1 },
+    },
+    pressed: {
+      scale: 0.95,
+      y: 0,
+      transition: { duration: 0.1 },
+    },
+  });
+
+  const triggerButtonAnimation = (key) => {
+    setPressedKey(key);
+    setTimeout(() => setPressedKey(null), 150);
+  };
+
+  const displayVariants = {
+    initial: { scale: 1, opacity: 1 },
+    animate: {
+      scale: [1, 1.02, 1],
+      opacity: [1, 0.8, 1],
+      transition: { duration: 0.3, ease: 'easeInOut' },
+    },
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       e.preventDefault();
-      if (e.key >= '0' && e.key <= '9') handleButtonClick(e.key);
-      else if ('+-*/.'.includes(e.key)) handleButtonClick(e.key);
-      else if (e.key === 'Enter' || e.key === '=') handleEvaluate();
-      else if (e.key === 'Backspace') handleBackspace();
-      else if (e.key === 'Escape') handleClear();
-      else if (e.key.toLowerCase() === 'c') handleAllClear();
+
+      if (e.key >= '0' && e.key <= '9') {
+        triggerButtonAnimation(e.key);
+        inputNumber(parseInt(e.key));
+      } else if (e.key === '.') {
+        triggerButtonAnimation('.');
+        inputDecimal();
+      } else if (e.key === '+') {
+        triggerButtonAnimation('+');
+        performOperation('+');
+      } else if (e.key === '-') {
+        triggerButtonAnimation('-');
+        performOperation('-');
+      } else if (e.key === '*') {
+        triggerButtonAnimation('*');
+        performOperation('*');
+      } else if (e.key === '/') {
+        triggerButtonAnimation('/');
+        performOperation('/');
+      } else if (e.key === 'Enter' || e.key === '=') {
+        triggerButtonAnimation('=');
+        performOperation('=');
+      } else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') {
+        triggerButtonAnimation('C');
+        clear();
+      } else if (e.key === 'Backspace') {
+        triggerButtonAnimation('⌫');
+        setDisplay(display.slice(0, -1) || '0');
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [expression]);
+  }, [display]);
 
   return (
-    <div className={theme.app.bg}>
-      <div className="bg-white dark:bg-gray-700 rounded-lg border p-1 mb-1">
-        <div className="text-right text-2xl font-mono text-gray-800 dark:text-white">
-          {expression || '0'}
-        </div>
+    <div className={`${theme.calculator.bg} p-6 h-full flex flex-col`}>
+      {/* Display */}
+      <div className={`${theme.calculator.display} rounded-2xl p-6 mb-6`}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={lastAction}
+            className={`text-right text-sm ${theme.calculator.displaySubtext} h-5 mb-2`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {lastAction}
+          </motion.div>
+        </AnimatePresence>
+
+        <motion.div
+          variants={displayVariants}
+          initial="initial"
+          animate="animate"
+          key={display}
+          className={`text-right text-5xl font-light ${theme.calculator.displayText} font-mono tracking-tight`}
+        >
+          {display}
+        </motion.div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-3">
-        {['MC', 'MR', 'M+', 'M-'].map(btn => (
-          <button key={btn} className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 text-sm"
-            onClick={() => handleMemory(btn)}>{btn}</button>
+      {/* Memory Buttons */}
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        {['MC', 'MR', 'M+', 'M−'].map((btn) => (
+          <motion.button
+            key={btn}
+            variants={getButtonVariants(btn)}
+            whileHover="hover"
+            whileTap="tap"
+            className={`${theme.calculator.memoryButton} rounded-xl py-3 text-sm font-semibold transition-all duration-200`}
+            onClick={() => handleMemory(btn.replace('−', '-'))}
+          >
+            {btn}
+          </motion.button>
         ))}
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
-        <button className={theme.app.button} onClick={handleAllClear}>AC</button>
-        <button className={theme.app.button} onClick={handleClear}>CE</button>
-        <button className={theme.app.button} onClick={handleBackspace}>⌫</button>
-        <button className={theme.app.button} onClick={() => handleButtonClick('/')}>÷</button>
+      {/* Calculator Buttons */}
+      <div className="grid grid-cols-4 gap-3 flex-1">
+        <motion.button
+          variants={getButtonVariants('C')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === 'C' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.functionButton} rounded-xl font-semibold text-lg transition-all duration-200`}
+          onClick={clear}
+        >
+          C
+        </motion.button>
+        <motion.button
+          variants={getButtonVariants('⌫')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '⌫' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.functionButton} rounded-xl font-semibold text-lg transition-all duration-200`}
+          onClick={() => setDisplay(display.slice(0, -1) || '0')}
+        >
+          ⌫
+        </motion.button>
+        <motion.button
+          variants={getButtonVariants('%')}
+          whileHover="hover"
+          whileTap="tap"
+          className={`${theme.calculator.functionButton} rounded-xl font-semibold text-lg transition-all duration-200`}
+        >
+          %
+        </motion.button>
+        <motion.button
+          variants={getButtonVariants('/')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '/' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.operatorButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+          onClick={() => performOperation('/')}
+        >
+          ÷
+        </motion.button>
 
-        {['7','8','9','*','4','5','6','-','1','2','3','+','0','.','='].map((btn, i) => (
-          <button key={btn} className={theme.app.button}
-            onClick={() => btn === '=' ? handleEvaluate() : handleButtonClick(btn)}
-            style={btn === '0' ? {gridColumn: 'span 2'} : {}}>
-            {btn === '*' ? '×' : btn}
-          </button>
+        {[7, 8, 9].map((num) => (
+          <motion.button
+            key={num}
+            variants={getButtonVariants(num.toString())}
+            whileHover="hover"
+            whileTap="tap"
+            animate={pressedKey === num.toString() ? 'pressed' : 'initial'}
+            className={`${theme.calculator.numberButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+            onClick={() => inputNumber(num)}
+          >
+            {num}
+          </motion.button>
         ))}
+        <motion.button
+          variants={getButtonVariants('*')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '*' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.operatorButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+          onClick={() => performOperation('*')}
+        >
+          ×
+        </motion.button>
+
+        {[4, 5, 6].map((num) => (
+          <motion.button
+            key={num}
+            variants={getButtonVariants(num.toString())}
+            whileHover="hover"
+            whileTap="tap"
+            animate={pressedKey === num.toString() ? 'pressed' : 'initial'}
+            className={`${theme.calculator.numberButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+            onClick={() => inputNumber(num)}
+          >
+            {num}
+          </motion.button>
+        ))}
+        <motion.button
+          variants={getButtonVariants('-')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '-' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.operatorButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+          onClick={() => performOperation('-')}
+        >
+          −
+        </motion.button>
+
+        {[1, 2, 3].map((num) => (
+          <motion.button
+            key={num}
+            variants={getButtonVariants(num.toString())}
+            whileHover="hover"
+            whileTap="tap"
+            animate={pressedKey === num.toString() ? 'pressed' : 'initial'}
+            className={`${theme.calculator.numberButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+            onClick={() => inputNumber(num)}
+          >
+            {num}
+          </motion.button>
+        ))}
+        <motion.button
+          variants={getButtonVariants('+')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '+' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.operatorButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+          onClick={() => performOperation('+')}
+        >
+          +
+        </motion.button>
+
+        <motion.button
+          variants={getButtonVariants('0')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '0' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.numberButton} rounded-xl font-semibold text-xl transition-all duration-200 col-span-2`}
+          onClick={() => inputNumber(0)}
+        >
+          0
+        </motion.button>
+        <motion.button
+          variants={getButtonVariants('.')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '.' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.numberButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+          onClick={inputDecimal}
+        >
+          .
+        </motion.button>
+        <motion.button
+          variants={getButtonVariants('=')}
+          whileHover="hover"
+          whileTap="tap"
+          animate={pressedKey === '=' ? 'pressed' : 'initial'}
+          className={`${theme.calculator.equalsButton} rounded-xl font-semibold text-xl transition-all duration-200`}
+          onClick={() => performOperation('=')}
+        >
+          =
+        </motion.button>
       </div>
     </div>
   );
