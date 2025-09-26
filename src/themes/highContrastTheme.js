@@ -3,15 +3,27 @@ export const highContrastTheme = {
   name: 'High Contrast Theme',
   desktop: 'bg-black',
   taskbar: 'bg-black border-t border-white',
-  window: { bg: 'bg-black', border: 'border-white', header: 'bg-black border-b border-white', text: 'text-white', content: 'text-white bg-black' },
+  window: {
+    bg: 'bg-black',
+    border: 'border-white',
+    header: 'bg-black border-b border-white',
+    text: 'text-white',
+    content: 'text-white bg-black',
+  },
   startMenu: 'bg-black border border-white',
   glass: 'bg-black/50 border border-white',
-  text: { primary: 'text-white', secondary: 'text-gray-200', window: 'text-white', startMenu: 'text-white' },
+  text: {
+    primary: 'text-white',
+    secondary: 'text-gray-200',
+    window: 'text-white',
+    startMenu: 'text-white',
+  },
   app: {
     bg: 'bg-black',
     text: 'text-white',
     input: 'bg-black border-white text-white placeholder-gray-300',
-    button: 'bg-black hover:bg-white text-white hover:text-black border border-white',
+    button:
+      'bg-black hover:bg-white text-white hover:text-black border border-white',
     table: 'bg-black border-white',
     tableHeader: 'bg-black text-white',
     tableCell: 'bg-black text-white border-white',
@@ -25,5 +37,20 @@ export const highContrastTheme = {
     dropdown_item_hover: 'hover:bg-yellow-400 hover:text-black',
     toolbar_button_active: 'bg-yellow-400 text-black',
   },
-  notification: 'bg-black text-white border border-white'
+  calculator: {
+    bg: 'bg-black',
+    display: 'bg-black border-2 border-white',
+    displayText: 'text-white',
+    displaySubtext: 'text-gray-300',
+    numberButton:
+      'bg-black hover:bg-white text-white hover:text-black border-2 border-white',
+    operatorButton:
+      'bg-yellow-400 hover:bg-yellow-300 text-black border-2 border-white',
+    equalsButton: 'bg-white hover:bg-gray-200 text-black border-2 border-white',
+    functionButton:
+      'bg-black hover:bg-gray-800 text-white border-2 border-gray-400',
+    memoryButton:
+      'bg-black hover:bg-yellow-400 text-white hover:text-black border-2 border-yellow-400',
+  },
+  notification: 'bg-black text-white border border-white',
 };
