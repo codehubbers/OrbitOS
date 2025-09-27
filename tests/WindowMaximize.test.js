@@ -13,7 +13,7 @@ jest.mock('framer-motion', () => ({
 }));
 
 // Mock SnapPreview
-jest.mock('../src/components/SnapPreview', () => {
+jest.mock('../src/system/components/SnapPreview', () => {
   return function SnapPreview() {
     return null;
   };
