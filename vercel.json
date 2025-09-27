@@ -1,16 +1,1 @@
-{
-  "functions": {
-    "src/server/index.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/src/server/index.js"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
-}
+{}
