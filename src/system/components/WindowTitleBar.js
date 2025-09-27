@@ -6,6 +6,8 @@ import React, { memo } from 'react';
 
 const WindowTitleBar = ({
   app,
+  theme,
+  isMaximized,
   onMouseDown,
   onDoubleClick,
   onMinimize,
@@ -14,27 +16,42 @@ const WindowTitleBar = ({
 }) => {
   return (
     <div
-      className="window-title-bar"
+      className={`${theme.window.header} px-3 py-2 flex justify-between items-center window-drag border-b select-none`}
+      style={{ height: '32px', userSelect: 'none' }}
       onMouseDown={onMouseDown}
       onDoubleClick={onDoubleClick}
     >
-      <span className="window-title">{app.name}</span>
-      <div className="window-controls">
+      <span
+        className={`font-medium text-sm ${theme.window.text} select-none`}
+        style={{ userSelect: 'none' }}
+      >
+        {app.name}
+      </span>
+      <div className="flex items-center gap-1">
         <button
-          onClick={onMinimize}
-          className="window-minimize"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMinimize();
+          }}
+          className="w-3 h-3 bg-yellow-500 hover:bg-yellow-600 rounded-full transition-colors"
           title="Minimize"
           aria-label="Minimize window"
         />
         <button
-          onClick={onMaximize}
-          className={app.maximized ? 'window-restore' : 'window-maximize'}
-          title={app.maximized ? 'Restore' : 'Maximize'}
-          aria-label={app.maximized ? 'Restore window' : 'Maximize window'}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMaximize();
+          }}
+          className="w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-600"
+          title={isMaximized ? 'Restore' : 'Maximize'}
+          aria-label={isMaximized ? 'Restore window' : 'Maximize window'}
         />
         <button
-          onClick={onClose}
-          className="window-close"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-600"
           title="Close"
           aria-label="Close window"
         />

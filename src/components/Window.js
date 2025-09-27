@@ -3,10 +3,12 @@ import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import SnapPreview from '@/system/components/SnapPreview';
+import WindowTitleBar from '@/system/components/WindowTitleBar';
 import { useWindowResize } from '@/hooks/useWindowResize';
 import useWindowDrag from '@/hooks/useWindowDrag';
 import useWindowSnap from '@/hooks/useWindowSnap';
 import ResizeHandles from '@/system/components/ResizeHandles';
+import { TASKBAR_HEIGHT, SNAP_THRESHOLD } from '@/system/config/window';
 
 export default function Window({ app, children }) {
   const { dispatch } = useApp();
@@ -52,6 +54,7 @@ export default function Window({ app, children }) {
     position,
     size,
     isResizing,
+    isMaximized,
     handleResize,
     endResize,
     updateWindow,
@@ -62,9 +65,6 @@ export default function Window({ app, children }) {
   });
 
   const handleMouseDown = (e) => {
-    if (isMaximized) {
-      handleMaximize();
-    }
     dragMouseDown(e);
   };
 
@@ -81,15 +81,31 @@ export default function Window({ app, children }) {
     dispatch({ type: 'MINIMIZE_APP', payload: { appId: app.id } });
   };
 
-  const handleMaximize = () => {
+  const handleToggleMaximize = () => {
     if (isMaximized) {
-      updateWindow(savedState.current.size, savedState.current.position);
-      setIsMaximized(false);
+      // Restore window
+      if (
+        savedState.current &&
+        savedState.current.size &&
+        savedState.current.position
+      ) {
+        clearPreview();
+        updateWindow(savedState.current.size, savedState.current.position);
+        setIsMaximized(false);
+      }
     } else {
-      savedState.current = { position, size };
+      // Maximize window
+      savedState.current = {
+        position: { x: Math.round(position.x), y: Math.round(position.y) },
+        size: {
+          width: Math.round(size.width),
+          height: Math.round(size.height),
+        },
+      };
+
       const maximizedSize = {
         width: window.innerWidth,
-        height: window.innerHeight - 50,
+        height: window.innerHeight - TASKBAR_HEIGHT,
       };
       const maximizedPosition = { x: 0, y: 0 };
       updateWindow(maximizedSize, maximizedPosition);
@@ -119,36 +135,16 @@ export default function Window({ app, children }) {
             }}
           >
             {/* Window Header */}
-            <div
-              className={`${theme.window.header} px-3 py-2 flex justify-between items-center window-drag border-b select-none`}
-              style={{ height: '32px', userSelect: 'none' }}
+            <WindowTitleBar
+              app={app}
+              theme={theme}
+              isMaximized={isMaximized}
               onMouseDown={handleMouseDown}
-              onDoubleClick={handleMaximize}
-            >
-              <span
-                className={`font-medium text-sm ${theme.window.text} select-none`}
-                style={{ userSelect: 'none' }}
-              >
-                {app.name}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handleMinimize}
-                  className="w-3 h-3 bg-yellow-500 hover:bg-yellow-600 rounded-full transition-colors"
-                  title="Minimize"
-                />
-                <button
-                  onClick={handleMaximize}
-                  className="w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-600"
-                  title={isMaximized ? 'Restore' : 'Maximize'}
-                />
-                <button
-                  onClick={handleClose}
-                  className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-600"
-                  title="Close"
-                />
-              </div>
-            </div>
+              onDoubleClick={handleToggleMaximize}
+              onMinimize={handleMinimize}
+              onMaximize={handleToggleMaximize}
+              onClose={handleClose}
+            />
 
             {/* Window Content */}
             <div className="flex-1 overflow-hidden">

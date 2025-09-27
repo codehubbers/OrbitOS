@@ -10,6 +10,7 @@ export default function useWindowDrag({
   position,
   size,
   isResizing,
+  isMaximized,
   handleResize,
   endResize,
   updateWindow,
@@ -23,7 +24,7 @@ export default function useWindowDrag({
 
   const handleMouseDown = useCallback(
     (e) => {
-      if (isResizing || app.maximized) return;
+      if (isResizing || isMaximized) return;
       setIsDragging(true);
       dragRef.current = {
         startX: e.clientX - position.x,
@@ -31,7 +32,7 @@ export default function useWindowDrag({
       };
       dispatch({ type: 'SET_ACTIVE_APP', payload: app.id });
     },
-    [isResizing, app.maximized, position.x, position.y, dispatch, app.id],
+    [isResizing, isMaximized, position.x, position.y, dispatch, app.id],
   );
 
   const handleMouseMove = useCallback(
