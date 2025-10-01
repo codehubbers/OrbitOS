@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbit OS - Stage 2 Task Distribution</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #334155;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+        
+        .stage-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .task-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #334155;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .task-number {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .task-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+        }
+        
+        .task-description {
+            color: #cbd5e1;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        .assignee {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #334155;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 0.8rem;
+        }
+        
+        .assignee-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .assignee-name {
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        
+        .assignee-role {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        
+        .priority {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .priority-high {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .priority-medium {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .priority-stretch {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .tasks-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Orbit OS - Stage 2 Development</h1>
+            <p class="subtitle">Task Distribution & Assignment</p>
+            <div class="stage-badge">Stage 2 - Production Ready & Ecosystem Expansion</div>
+        </header>
+        
+        <div class="tasks-grid">
+            <!-- Task 1 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">1</span>
+                    <h3 class="task-title">Multi-Window Process Management</h3>
+                </div>
+                <p class="task-description">Implement support for multiple windows within the same application process with enhanced taskbar context menu showing open windows, focus controls, and close options.</p>
+                <span class="priority priority-high">High Priority</span>
+                <div class="assignee">
+                    <div class="avatar">A</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">atharv</span>
+                        <span class="assignee-role">Coder</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 2 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">2</span>
+                    <h3 class="task-title">App Store & Third-Party Integration</h3>
+                </div>
+                <p class="task-description">Create application marketplace for installing third-party software with security sandbox, discovery system, and rating/review functionality.</p>
+                <span class="priority priority-high">High Priority</span>
+                <div class="assignee">
+                    <div class="avatar">I</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">Ismail Bin Mujeeb</span>
+                        <span class="assignee-role">NODE</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 3 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">3</span>
+                    <h3 class="task-title">Google Drive Integration</h3>
+                </div>
+                <p class="task-description">Implement Google Drive OAuth binding, file synchronization, offline caching, and notification system for File Manager access control.</p>
+                <span class="priority priority-high">High Priority</span>
+                <div class="assignee">
+                    <div class="avatar">G</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">Gordon.H</span>
+                        <span class="assignee-role">root</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 4 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">4</span>
+                    <h3 class="task-title">Terminal Application with CLI</h3>
+                </div>
+                <p class="task-description">Build terminal interface using xterm.js with basic commands (ls, mkdir, cd, etc.), command history, tab completion, and process management.</p>
+                <span class="priority priority-high">High Priority</span>
+                <div class="assignee">
+                    <div class="avatar">E</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">ethical-buddy</span>
+                        <span class="assignee-role">OSDV</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 5 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">5</span>
+                    <h3 class="task-title">Package Manager & CLI Tools</h3>
+                </div>
+                <p class="task-description">Design custom package manager, create binary file system format for web executables, and develop sandboxed environment for CLI tools.</p>
+                <span class="priority priority-medium">Medium Priority</span>
+                <div class="assignee">
+                    <div class="avatar">D</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">dalker</span>
+                        <span class="assignee-role">Maintainer</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 6 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">6</span>
+                    <h3 class="task-title">Enhanced Window Management</h3>
+                </div>
+                <p class="task-description">Implement window grouping, tabbed interfaces, transparency, always-on-top functionality, and virtual desktop/workspace support.</p>
+                <span class="priority priority-medium">Medium Priority</span>
+                <div class="assignee">
+                    <div class="avatar">S</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">Sixhill</span>
+                        <span class="assignee-role">Developer</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 7 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">7</span>
+                    <h3 class="task-title">Real-time Collaboration Features</h3>
+                </div>
+                <p class="task-description">Implement live document editing, presence indicators, shared clipboard, and permission-based file/application sharing across users.</p>
+                <span class="priority priority-stretch">Stretch Goal</span>
+                <div class="assignee">
+                    <div class="avatar">C</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">Coder</span>
+                        <span class="assignee-role">Developer</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task 8 -->
+            <div class="task-card">
+                <div>
+                    <span class="task-number">8</span>
+                    <h3 class="task-title">Performance & Offline Support</h3>
+                </div>
+                <p class="task-description">Implement service worker for offline functionality, lazy loading, memory management, and performance monitoring dashboard.</p>
+                <span class="priority priority-stretch">Stretch Goal</span>
+                <div class="assignee">
+                    <div class="avatar">J</div>
+                    <div class="assignee-info">
+                        <span class="assignee-name">Junaid Khan</span>
+                        <span class="assignee-role">Developer</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Orbit OS - A collaborative web-based desktop environment | Stage 2 Development Plan</p>
+            <p>Task distribution randomly assigned to 8 team members</p>
+        </footer>
+    </div>
+</body>
+</html>
