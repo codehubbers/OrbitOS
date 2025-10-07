@@ -81,6 +81,10 @@ export default function Window({ app, children }) {
     dispatch({ type: 'MINIMIZE_APP', payload: { appId: app.id } });
   };
 
+  const handleToggleAlwaysOnTop = () => {
+    dispatch({ type: 'TOGGLE_ALWAYS_ON_TOP', payload: { appId: app.id } });
+  };
+
   const handleToggleMaximize = () => {
     if (isMaximized) {
       // Restore window
@@ -131,7 +135,7 @@ export default function Window({ app, children }) {
               top: position.y,
               width: size.width,
               height: size.height,
-              zIndex: app.zIndex,
+              zIndex: app.alwaysOnTop ? 10000 + app.zIndex : app.zIndex,
             }}
           >
             {/* Window Header */}
@@ -144,6 +148,7 @@ export default function Window({ app, children }) {
               onMinimize={handleMinimize}
               onMaximize={handleToggleMaximize}
               onClose={handleClose}
+              onToggleAlwaysOnTop={handleToggleAlwaysOnTop}
             />
 
             {/* Window Content */}

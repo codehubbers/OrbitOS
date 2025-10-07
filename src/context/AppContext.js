@@ -18,7 +18,11 @@ function appReducer(state, action) {
           activeApp: action.payload.id,
           openApps: state.openApps.map((app) =>
             app.id === action.payload.id
-              ? { ...app, zIndex: state.nextZIndex }
+              ? {
+                  ...app,
+                  zIndex: state.nextZIndex,
+                  alwaysOnTop: app.alwaysOnTop || false, // Ensure alwaysOnTop is defined
+                }
               : app,
           ),
           nextZIndex: state.nextZIndex + 1,
@@ -28,7 +32,11 @@ function appReducer(state, action) {
         ...state,
         openApps: [
           ...state.openApps,
-          { ...action.payload, zIndex: state.nextZIndex },
+          {
+            ...action.payload,
+            zIndex: state.nextZIndex,
+            alwaysOnTop: false, // Initialize alwaysOnTop as false
+          },
         ],
         activeApp: action.payload.id,
         nextZIndex: state.nextZIndex + 1,
@@ -53,23 +61,24 @@ function appReducer(state, action) {
     case 'MINIMIZE_APP':
       return {
         ...state,
-        openApps: state.openApps.map(app =>
-          app.id === action.payload.appId  // ✅ Consistent payload
-            ? { ...app, isMinimized: true }  // ✅ Use isMinimized
-            : app
+        openApps: state.openApps.map((app) =>
+          app.id === action.payload.appId // ✅ Consistent payload
+            ? { ...app, isMinimized: true } // ✅ Use isMinimized
+            : app,
         ),
-        activeApp: state.activeApp === action.payload.appId ? null : state.activeApp
+        activeApp:
+          state.activeApp === action.payload.appId ? null : state.activeApp,
       };
-      
-    case 'RESTORE_APP':  // ✅ Add missing action
+
+    case 'RESTORE_APP': // ✅ Add missing action
       return {
         ...state,
-        openApps: state.openApps.map(app =>
+        openApps: state.openApps.map((app) =>
           app.id === action.payload.appId
             ? { ...app, isMinimized: false }
-            : app
+            : app,
         ),
-        activeApp: action.payload.appId
+        activeApp: action.payload.appId,
       };
 
     case 'TOGGLE_APP':
@@ -98,6 +107,18 @@ function appReducer(state, action) {
           nextZIndex: state.nextZIndex + 1,
         };
       }
+    case 'TOGGLE_ALWAYS_ON_TOP':
+      return {
+        ...state,
+        openApps: state.openApps.map((app) =>
+          app.id === action.payload.appId
+            ? {
+                ...app,
+                alwaysOnTop: !app.alwaysOnTop,
+              }
+            : app,
+        ),
+      };
     case 'SET_THEME':
       return {
         ...state,
