@@ -1,20 +1,28 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import SnapPreview from '@/system/components/SnapPreview';
 import WindowTitleBar from '@/system/components/WindowTitleBar';
+import WindowGroupIndicator from '@/system/components/WindowGroupIndicator';
 import { useWindowResize } from '@/hooks/useWindowResize';
 import useWindowDrag from '@/hooks/useWindowDrag';
 import useWindowSnap from '@/hooks/useWindowSnap';
 import ResizeHandles from '@/system/components/ResizeHandles';
+import TabManagerService from '@/system/services/TabManagerService';
 import { TASKBAR_HEIGHT, SNAP_THRESHOLD } from '@/system/config/window';
 
 export default function Window({ app, children }) {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
   const { theme } = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
   const savedState = useRef({ position: null, size: null });
+
+  // Find the group this window belongs to
+  const group = state.windowGroups.find((g) => g.windows.includes(app.id));
+
+  // If this window is in a group, don't show it as a separate window
+  const isGrouped = group !== undefined;
 
   // Initialize hooks
   const initialPosition = {
@@ -74,7 +82,22 @@ export default function Window({ app, children }) {
   };
 
   const handleClose = () => {
-    dispatch({ type: 'CLOSE_APP', payload: app.id });
+    if (TabManagerService.isTabManager(app)) {
+      // For Tab Manager, use service to handle cleanup
+      const group = state.windowGroups.find((g) => g.id === app.groupId);
+      const actions = TabManagerService.handleTabManagerClose({
+        appId: app.id,
+        groupId: app.groupId,
+        group,
+        dispatch,
+      });
+
+      // Dispatch all actions
+      actions.forEach((action) => dispatch(action));
+    } else {
+      // Regular app close
+      dispatch({ type: 'CLOSE_APP', payload: app.id });
+    }
   };
 
   const handleMinimize = () => {
@@ -123,7 +146,7 @@ export default function Window({ app, children }) {
     <>
       <SnapPreview layout={snapPreview} />
       <AnimatePresence>
-        {!app.isMinimized && (
+        {!app.isMinimized && !isGrouped && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -138,6 +161,9 @@ export default function Window({ app, children }) {
               zIndex: app.alwaysOnTop ? 10000 + app.zIndex : app.zIndex,
             }}
           >
+            {/* Group Indicator */}
+            {group && <WindowGroupIndicator window={app} group={group} />}
+
             {/* Window Header */}
             <WindowTitleBar
               app={app}

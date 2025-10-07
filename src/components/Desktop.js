@@ -24,6 +24,7 @@ import SettingsApp from '@/pages/apps/settings';
 import MonitorApp from '@/pages/apps/monitor';
 import FilemanagerApp from '@/pages/apps/filemanager';
 import Calculator from '@/pages/apps/calculator';
+import TabManager from './TabManager';
 
 const appComponents = {
   notes: NotesApp,
@@ -32,6 +33,7 @@ const appComponents = {
   monitor: MonitorApp,
   filemanager: FilemanagerApp,
   calculator: Calculator,
+  'tab-manager': TabManager,
 };
 
 export default function Desktop() {
@@ -154,7 +156,11 @@ export default function Desktop() {
     }
     return (
       <Window key={app.id} app={app}>
-        <AppComponent />
+        {app.component === 'tab-manager' ? (
+          <AppComponent groupId={app.groupId} />
+        ) : (
+          <AppComponent />
+        )}
       </Window>
     );
   };
