@@ -141,7 +141,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
       exit={{ opacity: 0, x: -100 }}
       className="w-full max-w-md"
     >
-      <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-hide">
         <div className="text-center mb-8">
           <button
             onClick={onBack}
