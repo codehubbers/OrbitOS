@@ -13,6 +13,7 @@ const WindowTitleBar = ({
   onMinimize,
   onMaximize,
   onClose,
+  onToggleAlwaysOnTop,
 }) => {
   return (
     <div
@@ -28,6 +29,23 @@ const WindowTitleBar = ({
         {app.name}
       </span>
       <div className="flex items-center gap-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleAlwaysOnTop();
+          }}
+          className={`w-3 h-3 rounded-full transition-colors ${
+            app.alwaysOnTop === true
+              ? 'bg-green-500 hover:bg-green-600'
+              : 'bg-gray-400 hover:bg-gray-500'
+          }`}
+          title={
+            app.alwaysOnTop ? 'Disable Always on Top' : 'Enable Always on Top'
+          }
+          aria-label={
+            app.alwaysOnTop ? 'Disable Always on Top' : 'Enable Always on Top'
+          }
+        />
         <button
           onClick={(e) => {
             e.stopPropagation();

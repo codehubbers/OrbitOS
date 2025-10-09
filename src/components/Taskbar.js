@@ -6,6 +6,7 @@ import AppRegistry from '@/system/services/AppRegistry';
 import UserProfileTooltip from './UserProfileTooltip';
 import UserProfile from './UserProfile';
 import AvatarEditor from './AvatarEditor';
+import WindowGroupManager from '@/system/components/WindowGroupManager';
 import { motion } from 'framer-motion';
 
 // --- Style Constants ---
@@ -115,18 +116,19 @@ const StartButtonAndMenu = ({ apps, onAppClick, theme }) => {
 const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme, dispatch }) => (
   <div className="flex items-center space-x-1">
     {openApps.map((app) => {
-      const isActive = activeApp === app.id && !app.isMinimized;  // ✅ Use isMinimized
-      const isMinimized = app.isMinimized;  // ✅ Use isMinimized
+      const isActive = activeApp === app.id && !app.isMinimized; // ✅ Use isMinimized
+      const isMinimized = app.isMinimized; // ✅ Use isMinimized
       return (
         <motion.button
+          key={app.id}
           onClick={() => {
-            if (app.isMinimized) {  // ✅ Add restore logic
+            if (app.isMinimized) {
+              // ✅ Add restore logic
               dispatch({ type: 'RESTORE_APP', payload: { appId: app.id } });
             }
             onAppClick(app.id);
           }}
-          className={`... ${isMinimized ? 'opacity-60' : ''}`}  // ✅ Add opacity for minimized
-
+          className={`w-12 h-12 flex items-center justify-center ${theme.glass} rounded-xl shadow-lg hover:bg-white/20 transition-all ${isMinimized ? 'opacity-60' : ''}`}
           whileHover={{ scale: 1.2, y: -5 }}
           whileTap={{ scale: 0.9 }}
           title={app.name}
@@ -137,8 +139,7 @@ const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme, dispatch }) => (
               isActive
                 ? 'bg-white'
                 : isMinimized
-              ? 'bg-yellow-400'  // ✅ Use yellow for minimize indicator
-
+                  ? 'bg-yellow-400' // ✅ Use yellow for minimize indicator
                   : 'bg-gray-400'
             }`}
           />
@@ -413,6 +414,7 @@ export default function Taskbar({ onAvatarEdit }) {
   const { user } = useAuth();
   const [showUserTooltip, setShowUserTooltip] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showWindowGroupManager, setShowWindowGroupManager] = useState(false);
   const availableApps = AppRegistry.getAllApps();
 
   const openApp = (app) => {
@@ -423,9 +425,7 @@ export default function Taskbar({ onAvatarEdit }) {
   };
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 h-16 bg-black/30 backdrop-blur-lg border-t border-white/20 flex items-center justify-between px-4 z-50"
-    >
+    <div className="fixed bottom-0 left-0 right-0 h-16 bg-black/30 backdrop-blur-lg border-t border-white/20 flex items-center justify-between px-4 z-50">
       <div className="flex items-center space-x-2">
         <StartButtonAndMenu
           apps={availableApps}
@@ -438,9 +438,8 @@ export default function Taskbar({ onAvatarEdit }) {
           activeApp={state.activeApp}
           onAppClick={toggleApp}
           theme={theme}
-          dispatch={dispatch}  // ✅ Add dispatch prop for restore functionality
+          dispatch={dispatch} // ✅ Add dispatch prop for restore functionality
         />
-
       </div>
       <div className="flex items-center space-x-4">
         <div className="relative">
@@ -454,10 +453,15 @@ export default function Taskbar({ onAvatarEdit }) {
           >
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
               {user?.avatar ? (
-                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                <img
+                  src={user.avatar}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <span className="text-white font-semibold text-sm">
-                  {user?.displayName?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase()}
+                  {user?.displayName?.charAt(0).toUpperCase() ||
+                    user?.username?.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
@@ -468,11 +472,26 @@ export default function Taskbar({ onAvatarEdit }) {
           <UserProfileTooltip show={showUserTooltip} />
         </div>
         <div className={separatorStyle}></div>
+
+        {/* Window Management Buttons */}
+        <motion.button
+          onClick={() => setShowWindowGroupManager(true)}
+          className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+          whileHover={{ scale: 1.05 }}
+          title="Window Group Manager"
+        >
+          <span className="text-white text-lg">📁</span>
+          <span className="text-white text-sm font-medium hidden sm:block">
+            Groups
+          </span>
+        </motion.button>
+
+        <div className={separatorStyle}></div>
         <Clock />
       </div>
-      
+
       {showUserProfile && (
-        <UserProfile 
+        <UserProfile
           onClose={() => setShowUserProfile(false)}
           onAvatarEdit={() => {
             setShowUserProfile(false);
@@ -480,9 +499,14 @@ export default function Taskbar({ onAvatarEdit }) {
           }}
         />
       )}
-      
 
-
+      {/* Window Management Modals */}
+      {showWindowGroupManager && (
+        <WindowGroupManager
+          isVisible={showWindowGroupManager}
+          onClose={() => setShowWindowGroupManager(false)}
+        />
+      )}
     </div>
   );
 }
