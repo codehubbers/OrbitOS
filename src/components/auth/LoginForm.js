@@ -1,43 +1,49 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginForm({ onSuccess, onBack, theme }) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false
+    rememberMe: false,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [showPassword, setShowPassword] = useState(false);
+
   const { login } = useAuth();
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
     try {
-      const result = await login(formData.email, formData.password, formData.rememberMe);
+      const result = await login(
+        formData.email,
+        formData.password,
+        formData.rememberMe,
+      );
       onSuccess(result);
     } catch (error) {
       setErrors({ submit: error.message });
@@ -48,13 +54,13 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
-    
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -77,8 +83,11 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
           <p className="text-white/70">Sign in to continue to OrbitOS</p>
         </div>
 
+        {/** Login Form */}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
+            {/** Email */}
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
                 Email Address
@@ -103,21 +112,39 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
                 </motion.p>
               )}
             </div>
-
-            <div>
+            {/** Password */}
+            <div className="relative mb-4">
               <label className="block text-sm font-medium text-white/90 mb-2">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
-                  errors.password ? 'border-red-400' : 'border-white/20'
-                } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-sm`}
-                placeholder="Enter your password"
-              />
+
+              {/* Input Wrapper with Icon */}
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 pr-10 rounded-xl bg-white/5 border ${
+                    errors.password ? 'border-red-400' : 'border-white/20'
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-sm`}
+                  placeholder="Enter your password"
+                />
+
+                {/* Eye Icon */}
+                <span
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 cursor-pointer hover:text-white transition-colors"
+                >
+                  {showPassword ? (
+                    <Eye size={18} strokeWidth={2} />
+                  ) : (
+                    <EyeOff size={18} strokeWidth={2} />
+                  )}
+                </span>
+              </div>
+
+              {/* Error Message */}
               {errors.password && (
                 <motion.p
                   initial={{ opacity: 0, y: -10 }}
@@ -141,7 +168,10 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
               />
               <span className="ml-2 text-sm text-white/80">Remember me</span>
             </label>
-            <button type="button" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+            <button
+              type="button"
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
               Forgot password?
             </button>
           </div>
