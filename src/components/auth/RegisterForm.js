@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterForm({ onSuccess, onBack, theme }) {
   const [formData, setFormData] = useState({
@@ -9,13 +10,14 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
     password: '',
     confirmPassword: '',
     displayName: '',
-    acceptTerms: false
+    acceptTerms: false,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  
+  const [showPassword, setShowPassword] = useState(false);
+
   const { register } = useAuth();
 
   const checkPasswordStrength = (password) => {
@@ -30,7 +32,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
 
   const checkUsernameAvailability = async (username) => {
     if (username.length < 3) return;
-    
+
     try {
       const response = await fetch(`/api/auth/check-username/${username}`);
       const data = await response.json();
@@ -56,7 +58,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.username) {
       newErrors.username = 'Username is required';
     } else if (formData.username.length < 3) {
@@ -64,43 +66,43 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
     } else if (usernameAvailable === false) {
       newErrors.username = 'Username is already taken';
     }
-    
+
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = 'You must accept the terms and conditions';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
     try {
       const result = await register({
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        displayName: formData.displayName || formData.username
+        displayName: formData.displayName || formData.username,
       });
       onSuccess(result);
     } catch (error) {
@@ -112,13 +114,13 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
-    
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -153,6 +155,8 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
           <p className="text-white/70">Create your digital workspace</p>
         </div>
 
+        {/** Registration form */}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-white/90 mb-2">
@@ -164,9 +168,13 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
               value={formData.username}
               onChange={handleChange}
               className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
-                errors.username ? 'border-red-400' : 
-                usernameAvailable === true ? 'border-green-400' :
-                usernameAvailable === false ? 'border-red-400' : 'border-white/20'
+                errors.username
+                  ? 'border-red-400'
+                  : usernameAvailable === true
+                    ? 'border-green-400'
+                    : usernameAvailable === false
+                      ? 'border-red-400'
+                      : 'border-white/20'
               } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-sm`}
               placeholder="Choose a username"
             />
@@ -189,7 +197,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
               </motion.p>
             )}
           </div>
-
+          {/** Email */}
           <div>
             <label className="block text-sm font-medium text-white/90 mb-2">
               Email Address
@@ -214,7 +222,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
               </motion.p>
             )}
           </div>
-
+          {/** Display Name */}
           <div>
             <label className="block text-sm font-medium text-white/90 mb-2">
               Display Name (Optional)
@@ -228,34 +236,54 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
               placeholder="How should we display your name?"
             />
           </div>
-
+          {/** Password */}
           <div>
             <label className="block text-sm font-medium text-white/90 mb-2">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
-                errors.password ? 'border-red-400' : 'border-white/20'
-              } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-sm`}
-              placeholder="Create a strong password"
-            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 pr-10 rounded-xl bg-white/5 border ${
+                  errors.password ? 'border-red-400' : 'border-white/20'
+                } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all backdrop-blur-sm`}
+                placeholder="Create a strong password"
+              />
+
+              <span
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 cursor-pointer hover:text-white transition"
+              >
+                {showPassword ? (
+                  <Eye size={18} strokeWidth={2} />
+                ) : (
+                  <EyeOff size={18} strokeWidth={2} />
+                )}
+              </span>
+            </div>
+
             {formData.password && (
               <div className="mt-2">
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="text-white/70">Password strength:</span>
-                  <span className={`font-medium ${
-                    passwordStrength <= 2 ? 'text-red-400' :
-                    passwordStrength <= 3 ? 'text-yellow-400' : 'text-green-400'
-                  }`}>
+                  <span
+                    className={`font-medium ${
+                      passwordStrength <= 2
+                        ? 'text-red-400'
+                        : passwordStrength <= 3
+                          ? 'text-yellow-400'
+                          : 'text-green-400'
+                    }`}
+                  >
                     {getStrengthText()}
                   </span>
                 </div>
                 <div className="w-full bg-white/10 rounded-full h-2">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(passwordStrength / 5) * 100}%` }}
                     className={`h-2 rounded-full transition-all ${getStrengthColor()}`}
@@ -263,6 +291,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
                 </div>
               </div>
             )}
+
             {errors.password && (
               <motion.p
                 initial={{ opacity: 0, y: -10 }}
@@ -273,7 +302,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
               </motion.p>
             )}
           </div>
-
+          {/** Confirm Password */}
           <div>
             <label className="block text-sm font-medium text-white/90 mb-2">
               Confirm Password
@@ -298,7 +327,7 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
               </motion.p>
             )}
           </div>
-
+          {/** Checkbox (terms & PP) */}
           <div className="flex items-start">
             <input
               type="checkbox"
@@ -309,15 +338,22 @@ export default function RegisterForm({ onSuccess, onBack, theme }) {
             />
             <label className="ml-2 text-sm text-white/80">
               I agree to the{' '}
-              <button type="button" className="text-blue-400 hover:text-blue-300 underline">
+              <button
+                type="button"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
                 Terms of Service
               </button>{' '}
               and{' '}
-              <button type="button" className="text-blue-400 hover:text-blue-300 underline">
+              <button
+                type="button"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
                 Privacy Policy
               </button>
             </label>
           </div>
+          {/** Create Account btn */}
           {errors.acceptTerms && (
             <motion.p
               initial={{ opacity: 0, y: -10 }}
