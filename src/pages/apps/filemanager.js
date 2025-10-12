@@ -1,77 +1,115 @@
+// src/pages/apps/filemanager.js
+
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
+import { useDrive } from '@/context/DriveContext';
 
-function FileManager() {
+const FileItem = ({ item, source, theme }) => {
+  const isGdrive = source === 'gdrive';
+  const icon = isGdrive ? (
+    <img src={item.iconLink} alt="" className="w-5 h-5" />
+  ) : (
+    '📄'
+  );
+
+  return (
+    <li
+      className={`flex justify-between items-center p-2 rounded ${theme.app.button_subtle_hover}`}
+    >
+      <div className="flex items-center gap-3 flex-1 font-mono truncate">
+        {icon}
+        <span title={item.name}>{item.name}</span>
+      </div>
+      {isGdrive && (
+        <a
+          href={item.webViewLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`px-3 py-1 text-sm rounded ${theme.app.button}`}
+        >
+          Open
+        </a>
+      )}
+    </li>
+  );
+};
+
+const StatusMessage = ({ children }) => (
+  <div className="flex flex-col items-center justify-center h-full text-center">
+    <p className="text-gray-500 italic">{children}</p>
+  </div>
+);
+
+export default function FileManagerApp() {
   const { theme } = useTheme();
-  const [currentPath, setCurrentPath] = useState('/');
-  const [items, setItems] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(null);
+  const [activeSource, setActiveSource] = useState('local');
+  const [localItems, setLocalItems] = useState([]);
+  const [isLoadingLocal, setIsLoadingLocal] = useState(true);
 
-  useEffect(() => {
-    fetchItems(currentPath);
-  }, [currentPath]);
+  // --- THIS IS THE FIX ---
+  // We get syncFiles from the context, so it's defined and can be used.
+  const {
+    isConnected: isDriveConnected,
+    files: driveFiles,
+    isLoading: isDriveLoading,
+    syncFiles,
+    connectToDrive,
+  } = useDrive();
 
-  const fetchItems = async (path) => {
+  const fetchLocalItems = async () => {
+    setIsLoadingLocal(true);
     try {
-      setError(null);
-      const res = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+      const res = await fetch('/api/files');
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
-      setItems(data.files || []);
-    } catch (error) {
-      setError('Failed to load files.');
-      setItems([]);
-      console.error('Error fetching files:', error);
-    }
-  };
-
-  const handleUpload = async (event) => {
-    if (!event.target.files.length) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', event.target.files[0]);
-    formData.append('path', currentPath);
-
-    try {
-      const res = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Upload failed');
-      await fetchItems(currentPath);
-    } catch (error) {
-      setError('File upload failed.');
-      console.error('File upload failed:', error);
+      setLocalItems(data.files || []);
     } finally {
-      setUploading(false);
-      event.target.value = null;
+      setIsLoadingLocal(false);
     }
   };
 
-  const handleDownload = (filename) => {
-    const url = `/api/files/download?file=${encodeURIComponent(currentPath + filename)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleDelete = async (fileId) => {
-    try {
-      const res = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
-      await fetchItems(currentPath);
-    } catch (error) {
-      setError('File deletion failed.');
-      console.error('Delete file failed:', error);
+  useEffect(() => {
+    if (activeSource === 'local') {
+      fetchLocalItems();
     }
-  };
+  }, [activeSource]);
 
-  // Folder navigation disabled for now
-  const navigateFolder = (folderName) => {
-    alert('Folder navigation is not supported by backend yet.');
-  };
+  const itemsToDisplay = activeSource === 'local' ? localItems : driveFiles;
+  const currentLoadingState =
+    activeSource === 'local' ? isLoadingLocal : isDriveLoading;
 
-  const goUpFolder = () => {
-    // Disabled since no real navigation
+  const renderContent = () => {
+    if (currentLoadingState) {
+      return <StatusMessage>Loading items...</StatusMessage>;
+    }
+    if (activeSource === 'gdrive' && !isDriveConnected) {
+      return (
+        <StatusMessage>
+          Please connect to Google Drive in the Settings app.
+          <button
+            onClick={connectToDrive}
+            className={`mt-4 ${theme.app.button}`}
+          >
+            Connect Now
+          </button>
+        </StatusMessage>
+      );
+    }
+    if (itemsToDisplay.length === 0) {
+      return <StatusMessage>This location is empty.</StatusMessage>;
+    }
+    return (
+      <ul className="space-y-1">
+        {itemsToDisplay.map((item) => (
+          <FileItem
+            key={item.id || item._id}
+            item={item}
+            source={activeSource}
+            theme={theme}
+          />
+        ))}
+      </ul>
+    );
   };
 
   return (
@@ -79,87 +117,49 @@ function FileManager() {
       className={`h-full flex flex-col p-4 ${theme.app.bg} ${theme.app.text}`}
     >
       <h2 className="text-2xl font-semibold mb-4">File Manager</h2>
-
-      <div className="mb-4 flex items-center gap-4">
-        <button
-          onClick={goUpFolder}
-          disabled
-          className={`px-3 py-1 rounded ${theme.app.button} opacity-50 cursor-not-allowed`}
+      <div className="flex-grow flex gap-4 overflow-hidden">
+        {/* Sidebar */}
+        <div
+          className={`w-48 flex-shrink-0 p-2 border rounded ${theme.app.table}`}
         >
-          Up
-        </button>
-        <div className="flex-1 font-mono text-sm select-text">
-          {currentPath}
-        </div>
-        <label
-          htmlFor="file-upload"
-          className={`cursor-pointer px-3 py-1 border rounded ${theme.app.button} hover:bg-opacity-80`}
-          title="Upload File"
-        >
-          {uploading ? 'Uploading…' : 'Upload File'}
-        </label>
-        <input
-          id="file-upload"
-          type="file"
-          onChange={handleUpload}
-          className="hidden"
-          disabled={uploading}
-        />
-      </div>
-
-      {error && (
-        <div className="mb-4 p-2 bg-red-600 text-white rounded-lg">{error}</div>
-      )}
-
-      <ul className="flex flex-col gap-2 overflow-auto flex-grow border rounded p-2 shadow-inner">
-        {items.length === 0 && (
-          <li className="text-center text-gray-500 italic">
-            This folder is empty
-          </li>
-        )}
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className={`flex justify-between items-center p-2 rounded cursor-default ${
-              item.isDirectory ? theme.app.hoverFolder : theme.app.hoverFile
-            }`}
-          >
-            <div
-              className="flex-1 font-mono truncate"
-              title={item.name}
-              style={{ color: item.isDirectory ? '#3b82f6' : undefined }}
+          <h3 className="font-bold mb-2">Locations</h3>
+          <ul className="space-y-1">
+            <li>
+              <button
+                onClick={() => setActiveSource('local')}
+                className={`w-full text-left px-2 py-1 rounded ${activeSource === 'local' ? 'bg-blue-500 text-white' : theme.app.button_subtle_hover}`}
+              >
+                Local Files
+              </button>
+            </li>
+            {isDriveConnected && (
+              <li>
+                <button
+                  onClick={() => setActiveSource('gdrive')}
+                  className={`w-full text-left px-2 py-1 rounded ${activeSource === 'gdrive' ? 'bg-blue-500 text-white' : theme.app.button_subtle_hover}`}
+                >
+                  Google Drive
+                </button>
+              </li>
+            )}
+          </ul>
+          {activeSource === 'gdrive' && (
+            <button
+              onClick={() => syncFiles(true)}
+              className={`mt-4 w-full text-sm ${theme.app.button}`}
             >
-              {item.isDirectory ? (
-                <span>{item.name}/</span>
-              ) : (
-                <span>{item.name}</span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {!item.isDirectory && (
-                <>
-                  <button
-                    onClick={() => handleDownload(item.name)}
-                    className={`px-2 py-1 text-sm rounded ${theme.app.button} hover:bg-opacity-80`}
-                    title="Download File"
-                  >
-                    Download
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="px-2 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
-                    title="Delete File"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+              Sync
+            </button>
+          )}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-grow border rounded p-2 shadow-inner overflow-y-auto">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default FileManager;

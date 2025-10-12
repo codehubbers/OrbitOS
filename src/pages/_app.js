@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/system/services/NotificationRegistry';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { DriveProvider } from '@/context/DriveContext';
 
 // We will use one function for our app wrapper
 export default function MyApp({ Component, pageProps }) {
@@ -15,7 +16,9 @@ export default function MyApp({ Component, pageProps }) {
         <AppProvider>
           <NotificationProvider>
             <SettingsProvider>
-              <Component {...pageProps} />
+              <DriveProvider>
+                <Component {...pageProps} />
+              </DriveProvider>
             </SettingsProvider>
           </NotificationProvider>
         </AppProvider>
