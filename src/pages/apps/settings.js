@@ -27,7 +27,12 @@ export default function SettingsApp() {
 
   return (
     <div
-      className={`h-full p-6 overflow-y-auto ${theme.app.bg} ${theme.app.text}`}
+      className={`h-full ${theme.app.bg} ${theme.app.text} p-6 force-scrollbar`}
+      style={{
+        overflowY: 'scroll',
+        height: '100%',
+        maxHeight: '100%',
+      }}
     >
       <h2 className="text-xl font-bold mb-6">System Settings</h2>
       <div className="space-y-6">
@@ -139,6 +144,49 @@ export default function SettingsApp() {
                 }
                 className={`w-4 h-4 ${theme.id === 'dark' ? 'accent-blue-500' : ''}`}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* --- ADDITIONAL SECTIONS FOR SCROLLING --- */}
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Display</h3>
+          <div className={`p-4 rounded-lg space-y-3 ${theme.app.table}`}>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Window Animations</label>
+              <input type="checkbox" defaultChecked className="w-4 h-4" />
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Transparency Effects</label>
+              <input type="checkbox" defaultChecked className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Performance</h3>
+          <div className={`p-4 rounded-lg space-y-3 ${theme.app.table}`}>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Hardware Acceleration</label>
+              <input type="checkbox" defaultChecked className="w-4 h-4" />
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Reduce Motion</label>
+              <input type="checkbox" className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Privacy</h3>
+          <div className={`p-4 rounded-lg space-y-3 ${theme.app.table}`}>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Analytics</label>
+              <input type="checkbox" className="w-4 h-4" />
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Error Reporting</label>
+              <input type="checkbox" defaultChecked className="w-4 h-4" />
             </div>
           </div>
         </div>

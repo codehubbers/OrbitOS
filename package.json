@@ -4,6 +4,7 @@
   "description": "A Web OS-style project for group collaboration",
   "scripts": {
     "dev": "next dev",
+    "dev:test-unapproved": "ORBIT_DEV_MODE=true next dev",
     "build": "next build",
     "start": "next start",
     "dev:all": "npm test && npm run dev",
@@ -26,12 +27,13 @@
     "helmet": "^8.1.0",
     "idb": "^8.0.3",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.545.0",
     "mongoose": "^8.18.2",
     "multer": "2.0.2",
     "next": "^14.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "react-quill": "^2.0.0"
+    "react-quill": "^0.0.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

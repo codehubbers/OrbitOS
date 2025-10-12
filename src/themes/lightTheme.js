@@ -9,6 +9,7 @@ export const lightTheme = {
     header: 'bg-white border-b border-[#d1d5db]',
     text: 'text-[#111827]',
     content: 'text-[#111827] bg-white',
+    scrollbar: 'custom-scrollbar-light',
   },
   startMenu: 'bg-white border border-gray-300',
   glass: 'bg-white/10 backdrop-blur-sm border border-white/20',

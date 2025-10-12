@@ -9,6 +9,7 @@ export const highContrastTheme = {
     header: 'bg-black border-b border-white',
     text: 'text-white',
     content: 'text-white bg-black',
+    scrollbar: 'custom-scrollbar-contrast',
   },
   startMenu: 'bg-black border border-white',
   glass: 'bg-black/50 border border-white',

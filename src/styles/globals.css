@@ -318,4 +318,107 @@ body {
 .scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;
-};
+}
+
+/* Force scrollbar visibility */
+.force-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: auto !important;
+}
+
+.force-scrollbar::-webkit-scrollbar {
+  width: 16px !important;
+  display: block !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 4px !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
+}
+
+/* Custom scrollbar styles - Force visibility */
+.custom-scrollbar-dark {
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #4b5563 #1f2937 !important;
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar {
+  width: 12px !important;
+  display: block !important;
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar-track {
+  background: #1f2937 !important;
+  border-radius: 6px !important;
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar-thumb {
+  background: #4b5563 !important;
+  border-radius: 6px !important;
+  border: 2px solid #1f2937 !important;
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+.custom-scrollbar-light {
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #9ca3af #f3f4f6 !important;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar {
+  width: 12px !important;
+  display: block !important;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-track {
+  background: #f3f4f6 !important;
+  border-radius: 6px !important;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 6px !important;
+  border: 2px solid #f3f4f6 !important;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+.custom-scrollbar-contrast {
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #ffffff #000000 !important;
+}
+
+.custom-scrollbar-contrast::-webkit-scrollbar {
+  width: 12px !important;
+  display: block !important;
+}
+
+.custom-scrollbar-contrast::-webkit-scrollbar-track {
+  background: #000000 !important;
+  border-radius: 6px !important;
+}
+
+.custom-scrollbar-contrast::-webkit-scrollbar-thumb {
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  border: 2px solid #000000 !important;
+}
+
+.custom-scrollbar-contrast::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db !important;
+}
