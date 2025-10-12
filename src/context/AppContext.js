@@ -74,15 +74,16 @@ function appReducer(state, action) {
           state.activeApp === action.payload.appId ? null : state.activeApp,
       };
 
-    case 'RESTORE_APP': // ✅ Add missing action
+    case 'RESTORE_APP':
       return {
         ...state,
         openApps: state.openApps.map((app) =>
           app.id === action.payload.appId
-            ? { ...app, isMinimized: false }
+            ? { ...app, isMinimized: false, zIndex: state.nextZIndex }
             : app,
         ),
         activeApp: action.payload.appId,
+        nextZIndex: state.nextZIndex + 1,
       };
 
     case 'TOGGLE_APP':
@@ -263,6 +264,9 @@ function appReducer(state, action) {
         ...state,
         theme: action.payload,
       };
+    case 'INSTALL_APP':
+      // Add installed app to registry (runtime installation)
+      return state;
     default:
       return state;
   }

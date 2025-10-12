@@ -29,7 +29,10 @@ export default function Window({ app, children }) {
     x: 100 + Math.random() * 200,
     y: 100 + Math.random() * 100,
   };
-  const initialSize = { width: 600, height: 400 };
+  const initialSize = {
+    width: 600,
+    height: app.id === 'settings' ? 350 : 400,
+  };
 
   const {
     size,
@@ -178,12 +181,11 @@ export default function Window({ app, children }) {
             />
 
             {/* Window Content */}
-            <div className="flex-1 overflow-hidden">
-              <div
-                className={`p-4 h-full overflow-auto ${theme.window.content}`}
-              >
-                {children}
-              </div>
+            <div
+              className={`flex-1 ${theme.window.content} ${theme.window.scrollbar}`}
+              style={{ height: 'calc(100% - 40px)', overflow: 'hidden' }}
+            >
+              {children}
             </div>
 
             {/* Resize Handles */}

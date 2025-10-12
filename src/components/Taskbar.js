@@ -116,17 +116,17 @@ const StartButtonAndMenu = ({ apps, onAppClick, theme }) => {
 const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme, dispatch }) => (
   <div className="flex items-center space-x-1">
     {openApps.map((app) => {
-      const isActive = activeApp === app.id && !app.isMinimized; // ✅ Use isMinimized
-      const isMinimized = app.isMinimized; // ✅ Use isMinimized
+      const isActive = activeApp === app.id && !app.isMinimized;
+      const isMinimized = app.isMinimized;
       return (
         <motion.button
           key={app.id}
           onClick={() => {
             if (app.isMinimized) {
-              // ✅ Add restore logic
               dispatch({ type: 'RESTORE_APP', payload: { appId: app.id } });
+            } else {
+              onAppClick(app.id);
             }
-            onAppClick(app.id);
           }}
           className={`w-12 h-12 flex items-center justify-center ${theme.glass} rounded-xl shadow-lg hover:bg-white/20 transition-all ${isMinimized ? 'opacity-60' : ''}`}
           whileHover={{ scale: 1.2, y: -5 }}
@@ -139,7 +139,7 @@ const OpenAppsTray = ({ openApps, activeApp, onAppClick, theme, dispatch }) => (
               isActive
                 ? 'bg-white'
                 : isMinimized
-                  ? 'bg-yellow-400' // ✅ Use yellow for minimize indicator
+                  ? 'bg-yellow-400'
                   : 'bg-gray-400'
             }`}
           />
@@ -438,7 +438,7 @@ export default function Taskbar({ onAvatarEdit }) {
           activeApp={state.activeApp}
           onAppClick={toggleApp}
           theme={theme}
-          dispatch={dispatch} // ✅ Add dispatch prop for restore functionality
+          dispatch={dispatch}
         />
       </div>
       <div className="flex items-center space-x-4">

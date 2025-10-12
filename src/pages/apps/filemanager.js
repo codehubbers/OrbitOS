@@ -42,9 +42,10 @@ const StatusMessage = ({ children }) => (
 
 export default function FileManagerApp() {
   const { theme } = useTheme();
-  const [activeSource, setActiveSource] = useState('local');
+  const [activeSource, setActiveSource] = useState('gdrive');
   const [localItems, setLocalItems] = useState([]);
   const [isLoadingLocal, setIsLoadingLocal] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
   // --- THIS IS THE FIX ---
   // We get syncFiles from the context, so it's defined and can be used.
@@ -68,11 +69,45 @@ export default function FileManagerApp() {
     }
   };
 
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        fetchLocalItems();
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
+  };
+
   useEffect(() => {
     if (activeSource === 'local') {
       fetchLocalItems();
     }
   }, [activeSource]);
+
+  // Auto-sync every 10 seconds for Google Drive
+  useEffect(() => {
+    if (activeSource === 'gdrive' && isDriveConnected) {
+      const interval = setInterval(() => {
+        syncFiles(false);
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [activeSource, isDriveConnected, syncFiles]);
 
   const itemsToDisplay = activeSource === 'local' ? localItems : driveFiles;
   const currentLoadingState =
@@ -84,15 +119,26 @@ export default function FileManagerApp() {
     }
     if (activeSource === 'gdrive' && !isDriveConnected) {
       return (
-        <StatusMessage>
-          Please connect to Google Drive in the Settings app.
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+          <img
+            src="/icons/gdrive.png"
+            alt="Google Drive"
+            className="w-16 h-16 mb-4"
+          />
+          <h3 className="text-lg font-semibold mb-2">
+            Connect to Google Drive
+          </h3>
+          <p className="text-gray-500 mb-4">
+            File Manager uses Google Drive as the default storage. Please
+            connect your account to continue.
+          </p>
           <button
             onClick={connectToDrive}
-            className={`mt-4 ${theme.app.button}`}
+            className={`px-6 py-2 ${theme.app.button}`}
           >
-            Connect Now
+            Connect Google Drive
           </button>
-        </StatusMessage>
+        </div>
       );
     }
     if (itemsToDisplay.length === 0) {
@@ -116,7 +162,40 @@ export default function FileManagerApp() {
     <div
       className={`h-full flex flex-col p-4 ${theme.app.bg} ${theme.app.text}`}
     >
-      <h2 className="text-2xl font-semibold mb-4">File Manager</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-semibold">File Manager</h2>
+        <div className="flex gap-2">
+          {activeSource === 'local' && (
+            <>
+              <input
+                type="file"
+                id="fileUpload"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <label
+                htmlFor="fileUpload"
+                className={`px-3 py-2 text-sm cursor-pointer rounded ${theme.app.button} ${isUploading ? 'opacity-50' : ''}`}
+                title="Upload"
+              >
+                {isUploading ? '⏳' : '📤'}
+              </label>
+            </>
+          )}
+          {(activeSource === 'local' ||
+            (activeSource === 'gdrive' && isDriveConnected)) && (
+            <button
+              onClick={() =>
+                activeSource === 'gdrive' ? syncFiles(true) : fetchLocalItems()
+              }
+              className={`p-2 rounded ${theme.app.button}`}
+              title="Refresh"
+            >
+              🔄
+            </button>
+          )}
+        </div>
+      </div>
       <div className="flex-grow flex gap-4 overflow-hidden">
         {/* Sidebar */}
         <div
@@ -132,25 +211,15 @@ export default function FileManagerApp() {
                 Local Files
               </button>
             </li>
-            {isDriveConnected && (
-              <li>
-                <button
-                  onClick={() => setActiveSource('gdrive')}
-                  className={`w-full text-left px-2 py-1 rounded ${activeSource === 'gdrive' ? 'bg-blue-500 text-white' : theme.app.button_subtle_hover}`}
-                >
-                  Google Drive
-                </button>
-              </li>
-            )}
+            <li>
+              <button
+                onClick={() => setActiveSource('gdrive')}
+                className={`w-full text-left px-2 py-1 rounded ${activeSource === 'gdrive' ? 'bg-blue-500 text-white' : theme.app.button_subtle_hover}`}
+              >
+                Google Drive {!isDriveConnected && '(Not Connected)'}
+              </button>
+            </li>
           </ul>
-          {activeSource === 'gdrive' && (
-            <button
-              onClick={() => syncFiles(true)}
-              className={`mt-4 w-full text-sm ${theme.app.button}`}
-            >
-              Sync
-            </button>
-          )}
         </div>
 
         {/* Main Content Area */}

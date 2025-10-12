@@ -1,6 +1,6 @@
 // src/components/Desktop.js
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -24,6 +24,7 @@ import SettingsApp from '@/pages/apps/settings';
 import MonitorApp from '@/pages/apps/monitor';
 import FilemanagerApp from '@/pages/apps/filemanager';
 import Calculator from '@/pages/apps/calculator';
+import AppStoreApp from '@/pages/apps/appstore';
 import TabManager from './TabManager';
 
 const appComponents = {
@@ -33,7 +34,66 @@ const appComponents = {
   monitor: MonitorApp,
   filemanager: FilemanagerApp,
   calculator: Calculator,
+  appstore: AppStoreApp,
   'tab-manager': TabManager,
+};
+
+// Dynamic app component for installed apps
+const DynamicApp = ({ appId }) => {
+  const [AppComponent, setAppComponent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadApp = async () => {
+      try {
+        // Get app code from GitHub
+        const response = await fetch(
+          `https://raw.githubusercontent.com/codehubbers/OrbitOSPackages/main/${appId}/App.jsx`,
+        );
+        const appCode = await response.text();
+
+        // Create sandboxed component
+        const componentFactory = new Function(
+          'React',
+          `
+          ${appCode}
+          return App;
+        `,
+        );
+
+        const Component = componentFactory(React);
+        setAppComponent(() => Component);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApp();
+  }, [appId]);
+
+  if (loading)
+    return React.createElement(
+      'div',
+      { style: { padding: '20px' } },
+      'Loading app...',
+    );
+  if (error)
+    return React.createElement(
+      'div',
+      { style: { padding: '20px', color: 'red' } },
+      `Error: ${error}`,
+    );
+  if (!AppComponent)
+    return React.createElement(
+      'div',
+      { style: { padding: '20px' } },
+      'App not found',
+    );
+
+  return React.createElement(AppComponent);
 };
 
 export default function Desktop() {
@@ -134,6 +194,15 @@ export default function Desktop() {
   const renderWindow = (app) => {
     const services = createAppServices(app);
     const AppComponent = appComponents[app.component];
+
+    // Handle dynamic installed apps
+    if (!AppComponent && app.component) {
+      return (
+        <Window key={app.id} app={app}>
+          <DynamicApp appId={app.component} />
+        </Window>
+      );
+    }
 
     if (!AppComponent)
       return (
