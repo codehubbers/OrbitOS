@@ -2,16 +2,92 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { useDrive } from '@/context/DriveContext';
+import { useNotification } from '@/system/services/NotificationRegistry';
+import { useFileOperations } from '@/hooks/useFileOperations';
+import { useFileDialog } from '@/hooks/useFileDialog';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 /**
  * A modal for opening a text file from Google Drive.
  */
 const OpenFromDriveModal = ({ theme, onFileSelect, onClose }) => {
-  const { files, isLoading } = useDrive();
-  // Filter to show only editable text files, not Google Docs/Sheets etc.
-  const textFiles = files.filter((file) => file.mimeType === 'text/plain');
+  const [files, setFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showNewMenu, setShowNewMenu] = useState(false);
+  const [authStatus, setAuthStatus] = useState({ connected: false });
+
+  const checkAuthStatus = async () => {
+    try {
+      const res = await fetch('/api/auth/status');
+      const status = await res.json();
+      setAuthStatus(status);
+      return status;
+    } catch (error) {
+      console.error('Failed to check auth status:', error);
+      return { connected: false };
+    }
+  };
+
+  const loadFiles = async () => {
+    try {
+      const status = await checkAuthStatus();
+      if (status.connected) {
+        const res = await fetch('/api/files/database');
+        const data = await res.json();
+        setFiles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load files:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFiles();
+  }, []);
+
+  const { createFile: createNewFile } = useFileOperations();
+
+  const handleNewFile = async () => {
+    const name = prompt('Enter file name:');
+    if (!name) return;
+
+    try {
+      await createNewFile(name, '');
+      await loadFiles();
+      setShowNewMenu(false);
+    } catch (error) {
+      console.error('Failed to create file:', error);
+    }
+  };
+
+  const { updateFile: updateExistingFile } = useFileOperations();
+
+  const handleRename = async (file) => {
+    const newName = prompt('Enter new name:', file.name);
+    if (!newName || newName === file.name) return;
+
+    try {
+      await updateExistingFile(file.id, { name: newName });
+      await loadFiles();
+    } catch (error) {
+      console.error('Failed to rename file:', error);
+    }
+  };
+
+  const { deleteFile } = useFileOperations();
+
+  const handleDelete = async (file) => {
+    if (!confirm(`Delete ${file.name}?`)) return;
+
+    try {
+      await deleteFile(file.id);
+      await loadFiles();
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+    }
+  };
 
   return (
     <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
@@ -20,32 +96,113 @@ const OpenFromDriveModal = ({ theme, onFileSelect, onClose }) => {
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className={`text-xl font-bold ${theme.app.text}`}>
-            Open from Google Drive
+            File Manager
           </h2>
-          <button
-            onClick={onClose}
-            className={`p-1 rounded-full ${theme.app.text_subtle} ${theme.app.button_subtle_hover}`}
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+          <div className="flex gap-2">
+            <div className="relative">
+              <button
+                onClick={() => setShowNewMenu(!showNewMenu)}
+                className={`px-3 py-1 rounded ${theme.app.button}`}
+              >
+                ➕ New
+              </button>
+              {showNewMenu && (
+                <div
+                  className={`absolute top-8 left-0 ${theme.app.bg} border rounded shadow-lg z-10`}
+                >
+                  <button
+                    onClick={handleNewFile}
+                    className={`block w-full px-4 py-2 text-left ${theme.app.button_subtle_hover}`}
+                  >
+                    📄 Text File
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={loadFiles}
+              className={`px-3 py-1 rounded ${theme.app.button}`}
+            >
+              🔄
+            </button>
+            <button
+              onClick={onClose}
+              className={`p-1 rounded-full ${theme.app.text_subtle} ${theme.app.button_subtle_hover}`}
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
         </div>
         <div className="h-64 overflow-y-auto">
           {isLoading ? (
-            <p>Loading files...</p>
-          ) : textFiles.length === 0 ? (
-            <p className="text-gray-500 italic">
-              No plain text files found in your Drive's root.
-            </p>
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-4xl mb-2">⏳</div>
+              <p>Loading files...</p>
+            </div>
+          ) : !authStatus.connected ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-6xl mb-4">🔐</div>
+              <h3 className="text-lg font-semibold mb-2">
+                Connect to Google Drive
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Sign in to access your files and enable backup
+              </p>
+              <button
+                onClick={() =>
+                  (window.location.href = '/api/auth/google/login')
+                }
+                className={`px-4 py-2 rounded ${theme.app.button}`}
+              >
+                🔗 Connect Google Drive
+              </button>
+            </div>
+          ) : files.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-6xl mb-4">📁</div>
+              <h3 className="text-lg font-semibold mb-2">No files to show</h3>
+              <p className="text-gray-500 mb-4">
+                Create your first file to get started
+              </p>
+              <button
+                onClick={handleNewFile}
+                className={`px-4 py-2 rounded ${theme.app.button}`}
+              >
+                ➕ Create File
+              </button>
+            </div>
           ) : (
             <ul className="space-y-1">
-              {textFiles.map((file) => (
+              {files.map((file) => (
                 <li
                   key={file.id}
-                  onClick={() => onFileSelect(file)}
-                  className={`p-2 rounded cursor-pointer flex items-center gap-2 ${theme.app.button_subtle_hover}`}
+                  className={`p-2 rounded flex items-center gap-2 ${theme.app.button_subtle_hover} group`}
                 >
-                  <img src={file.iconLink} alt="" className="w-4 h-4" />{' '}
-                  {file.name}
+                  <button
+                    onClick={() => onFileSelect(file)}
+                    className="flex-1 flex items-center gap-2 text-left"
+                  >
+                    📄 {file.name}
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {new Date(file.lastModified).toLocaleDateString()}
+                    </span>
+                  </button>
+                  <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                    <button
+                      onClick={() => handleRename(file)}
+                      className={`p-1 rounded ${theme.app.button_subtle_hover}`}
+                      title="Rename"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(file)}
+                      className={`p-1 rounded ${theme.app.button_subtle_hover}`}
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -68,7 +225,8 @@ const Notes = ({
   setMarkdownActions,
 }) => {
   const { theme } = useTheme();
-  const { isConnected: isDriveConnected } = useDrive();
+  const { showNotification } = useNotification();
+  const { openDialog, FileDialogComponent } = useFileDialog();
 
   // --- STATE MANAGEMENT ---
   const [content, setContent] = useState('');
@@ -83,6 +241,7 @@ const Notes = ({
   const [hasSelection, setHasSelection] = useState(false);
   const [driveFileId, setDriveFileId] = useState(null); // <-- ADDED: To track Drive files
   const [showOpenModal, setShowOpenModal] = useState(false); // <-- ADDED: To control the modal
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0); // <-- ADDED: For search functionality
 
   // --- REACT HOOKS & LOGIC HANDLERS ---
   useEffect(() => {
@@ -107,66 +266,54 @@ const Notes = ({
   };
 
   const handleOpenFromDrive = () => {
-    if (!isDriveConnected) {
-      alert('Please connect to Google Drive in the Settings app first.');
-      return;
-    }
-    setShowOpenModal(true);
+    openDialog(
+      'open',
+      '',
+      (file) => {
+        setContent(file.content || '');
+        setFileName(file.name);
+        setDriveFileId(file.id);
+        setHasChanges(false);
+      },
+      { permittedExtensions: ['txt', 'html', 'md'] },
+    );
   };
 
   const handleFileSelectedFromDrive = async (file) => {
     setShowOpenModal(false);
-    try {
-      const res = await fetch(`/api/files/gdrive/${file.id}`);
-      const data = await res.json();
-      setContent(data.content || '');
-      setFileName(file.name);
-      setDriveFileId(file.id);
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Failed to load file content:', error);
-      alert('Failed to load file content.');
-    }
+    setContent(file.content || '');
+    setFileName(file.name);
+    setDriveFileId(file.id);
+    setHasChanges(false);
   };
 
+  const { createFile, updateFile } = useFileOperations();
+
   const handleSaveToDrive = async () => {
-    if (!isDriveConnected) return alert('Not connected to Google Drive.');
     if (!hasChanges) return;
 
-    if (!driveFileId) {
-      // It's a new file
-      const newFileName = prompt(
-        'Enter a name for your new Drive file:',
-        fileName,
-      );
-      if (!newFileName) return;
-      try {
-        const res = await fetch('/api/files/gdrive/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newFileName, content }),
-        });
-        const data = await res.json();
-        if (data.file) {
-          setFileName(data.file.name);
-          setDriveFileId(data.file.id);
-          setHasChanges(false);
-        }
-      } catch (error) {
-        console.error('Failed to create file:', error);
-      }
-    } else {
-      // It's an existing file
-      try {
-        await fetch(`/api/files/gdrive/${driveFileId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
-        });
+    try {
+      if (!driveFileId) {
+        openDialog(
+          'save',
+          fileName,
+          async (fileData) => {
+            const data = await createFile(fileData.name, content);
+            setFileName(data.name);
+            setDriveFileId(data.id);
+            setHasChanges(false);
+            showNotification('File saved successfully!', 'success');
+          },
+          { permittedExtensions: ['txt', 'html', 'md'] },
+        );
+      } else {
+        await updateFile(driveFileId, { content });
         setHasChanges(false);
-      } catch (error) {
-        console.error('Failed to save file:', error);
+        showNotification('File saved successfully!', 'success');
       }
+    } catch (error) {
+      console.error('Failed to save file:', error);
+      showNotification('Failed to save file.', 'error');
     }
   };
 
@@ -191,6 +338,26 @@ const Notes = ({
     }
   };
 
+  const handleSaveAsToDrive = async () => {
+    openDialog(
+      'save',
+      fileName,
+      async (fileData) => {
+        try {
+          const data = await createFile(fileData.name, content);
+          setFileName(data.name);
+          setDriveFileId(data.id);
+          setHasChanges(false);
+          showNotification('File saved successfully!', 'success');
+        } catch (error) {
+          console.error('Failed to create file:', error);
+          showNotification('Failed to save file.', 'error');
+        }
+      },
+      { permittedExtensions: ['txt', 'html', 'md'] },
+    );
+  };
+
   const handleOpenLocal = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -212,8 +379,12 @@ const Notes = ({
 
   // --- OTHER HANDLERS (Unchanged) ---
   const handleReplaceAll = () => {
-    if (!findText) return alert('Please enter text to find.');
+    if (!findText) {
+      showNotification('Please enter text to find.', 'error');
+      return;
+    }
     setContent((prevContent) => prevContent.replaceAll(findText, replaceText));
+    showNotification('Text replaced successfully!', 'success');
   };
   const getSelectedText = () => {
     if (textareaRef) {
@@ -307,18 +478,15 @@ const Notes = ({
           { label: 'New', action: handleNew, shortcut: 'Ctrl+N' },
           { isSeparator: true },
           { label: 'Open Local File...', action: handleOpenLocal },
-          {
-            label: 'Open from Google Drive...',
-            action: handleOpenFromDrive,
-            disabled: !isDriveConnected,
-          },
+          { label: 'Open from Database...', action: handleOpenFromDrive },
           { isSeparator: true },
           { label: 'Save As Local File...', action: handleSaveAs },
           {
-            label: 'Save to Google Drive',
+            label: 'Save to Database',
             action: handleSaveToDrive,
-            disabled: !isDriveConnected || !hasChanges,
+            disabled: !hasChanges,
           },
+          { label: 'Save As to Database...', action: handleSaveAsToDrive },
         ];
       }
 
@@ -345,7 +513,7 @@ const Notes = ({
         });
       }
     }
-  }, [dropdownService, hasChanges, hasSelection, isDriveConnected]);
+  }, [dropdownService, hasChanges, hasSelection]);
 
   useEffect(() => {
     if (keyShortcutService) {
@@ -391,13 +559,7 @@ const Notes = ({
     <div
       className={`flex flex-col h-full w-full ${theme.app.bg} ${theme.app.text} overflow-hidden`}
     >
-      {showOpenModal && (
-        <OpenFromDriveModal
-          theme={theme}
-          onFileSelect={handleFileSelectedFromDrive}
-          onClose={() => setShowOpenModal(false)}
-        />
-      )}
+      <FileDialogComponent />
 
       {showFindReplace && (
         <div
