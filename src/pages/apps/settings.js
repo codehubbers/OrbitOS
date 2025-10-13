@@ -1,20 +1,51 @@
 // src/pages/apps/settings.js
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
-import { useDrive } from '@/context/DriveContext';
 
 export default function SettingsApp() {
   const { theme, currentTheme, switchTheme, themes } = useTheme();
   const { wallpaper, changeWallpaper, availableWallpapers } = useSettings();
-  const {
-    isConnected,
-    isLoading,
-    userEmail,
-    connectToDrive,
-    disconnectFromDrive,
-  } = useDrive();
+  const [authStatus, setAuthStatus] = useState({
+    connected: false,
+    loading: true,
+  });
+  const [userEmail, setUserEmail] = useState('');
+
+  const checkAuthStatus = async () => {
+    try {
+      const res = await fetch('/api/auth/status');
+      const status = await res.json();
+      setAuthStatus({ ...status, loading: false });
+
+      if (status.connected) {
+        const meRes = await fetch('/api/auth/google/me');
+        if (meRes.ok) {
+          const userData = await meRes.json();
+          setUserEmail(userData.email);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check auth status:', error);
+      setAuthStatus({ connected: false, loading: false });
+    }
+  };
+
+  const connectToDrive = () => {
+    window.location.href = '/api/auth/google/login';
+  };
+
+  const disconnectFromDrive = () => {
+    document.cookie =
+      'gdrive_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    setAuthStatus({ connected: false, loading: false });
+    setUserEmail('');
+  };
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
   const [settings, setSettings] = useState({
     notifications: true,
@@ -94,11 +125,11 @@ export default function SettingsApp() {
                 />
                 <label className="font-medium">Google Drive</label>
               </div>
-              {isLoading ? (
+              {authStatus.loading ? (
                 <span className="text-sm italic text-gray-400">
                   Checking status...
                 </span>
-              ) : isConnected ? (
+              ) : authStatus.connected ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-green-500">
                     {userEmail}
