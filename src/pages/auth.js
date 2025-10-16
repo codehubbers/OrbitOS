@@ -99,7 +99,7 @@ export default function Auth() {
                   onClick={() => setStep('login')}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-80 py-4 px-8 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl text-white font-semibold text-lg hover:bg-white/20 transition-all duration-300 shadow-xl"
+                  className="w-80 py-4 px-8 me-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl text-white font-semibold text-lg hover:bg-white/20 transition-all duration-300 shadow-xl"
                 >
                   Sign In to OrbitOS
                 </motion.button>
