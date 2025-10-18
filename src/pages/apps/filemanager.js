@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useDrive } from '@/context/DriveContext';
 
-const FileItem = ({ item, source, theme }) => {
+const FileItem = ({ item, source, theme, onDownload, onShare, onDelete }) => {
   const isGdrive = source === 'gdrive';
   const icon = isGdrive ? (
     <img src={item.iconLink} alt="" className="w-5 h-5" />
@@ -12,24 +12,63 @@ const FileItem = ({ item, source, theme }) => {
     '📄'
   );
 
+  const isDirectory = item.isDirectory;
+
+  // Get the correct file ID - use item.id for Google Drive, item._id for local files
+  const fileId = item.id || item._id;
+
   return (
     <li
       className={`flex justify-between items-center p-2 rounded ${theme.app.button_subtle_hover}`}
     >
       <div className="flex items-center gap-3 flex-1 font-mono truncate">
         {icon}
-        <span title={item.name}>{item.name}</span>
-      </div>
-      {isGdrive && (
-        <a
-          href={item.webViewLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`px-3 py-1 text-sm rounded ${theme.app.button}`}
+        <span
+          title={item.name}
+          style={{ color: isDirectory ? '#3b82f6' : undefined }}
         >
-          Open
-        </a>
-      )}
+          {item.name}
+          {isDirectory ? '/' : ''}
+        </span>
+      </div>
+      <div className="flex gap-2">
+        {isGdrive ? (
+          <a
+            href={item.webViewLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`px-3 py-1 text-sm rounded ${theme.app.button}`}
+          >
+            Open
+          </a>
+        ) : (
+          !isDirectory && (
+            <>
+              <button
+                onClick={() => onDownload(item.name)}
+                className={`px-2 py-1 text-sm rounded ${theme.app.button}`}
+                title="Download File"
+              >
+                Download
+              </button>
+              <button
+                onClick={() => onShare(fileId, item.name)} // FIXED: Pass fileId
+                className={`px-2 py-1 text-sm rounded ${theme.app.button}`}
+                title="Share File"
+              >
+                Share
+              </button>
+              <button
+                onClick={() => onDelete(fileId)} // Also fix delete
+                className="px-2 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
+                title="Delete File"
+              >
+                Delete
+              </button>
+            </>
+          )
+        )}
+      </div>
     </li>
   );
 };
@@ -46,6 +85,8 @@ export default function FileManagerApp() {
   const [localItems, setLocalItems] = useState([]);
   const [isLoadingLocal, setIsLoadingLocal] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   // --- THIS IS THE FIX ---
   // We get syncFiles from the context, so it's defined and can be used.
@@ -57,6 +98,16 @@ export default function FileManagerApp() {
     connectToDrive,
   } = useDrive();
 
+  const showNotification = (message, type) => {
+    if (type === 'success') {
+      setSuccess(message);
+      setTimeout(() => setSuccess(null), 3000);
+    } else {
+      setError(message);
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
   const fetchLocalItems = async () => {
     setIsLoadingLocal(true);
     try {
@@ -64,6 +115,9 @@ export default function FileManagerApp() {
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       setLocalItems(data.files || []);
+    } catch (error) {
+      setError('Failed to load files.');
+      setLocalItems([]);
     } finally {
       setIsLoadingLocal(false);
     }
@@ -83,14 +137,70 @@ export default function FileManagerApp() {
         body: formData,
       });
       if (res.ok) {
-        fetchLocalItems();
+        await fetchLocalItems();
+        showNotification('File uploaded successfully', 'success');
+      } else {
+        throw new Error('Upload failed');
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      showNotification('File upload failed', 'error');
     } finally {
       setIsUploading(false);
       event.target.value = '';
     }
+  };
+
+  const handleDownload = (filename) => {
+    const url = `/api/files/download?file=${encodeURIComponent(filename)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleShareFile = async (fileId, userEmail, permission) => {
+    try {
+      const response = await fetch('/api/files/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: fileId, // This is the missing field
+          userEmail,
+          permission,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showNotification(data.message, 'success');
+      } else {
+        throw new Error(data.error || 'Share failed');
+      }
+    } catch (error) {
+      showNotification(error.message, 'error');
+    }
+  };
+
+  const handleDelete = async (fileId) => {
+    try {
+      const res = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      await fetchLocalItems();
+      showNotification('File deleted successfully', 'success');
+    } catch (error) {
+      console.error('Delete file failed:', error);
+      showNotification('File deletion failed', 'error');
+    }
+  };
+
+  // Simple share handler that prompts for email
+  const handleShareClick = async (fileId, filename) => {
+    const userEmail = prompt(`Enter email to share "${filename}" with:`);
+    if (!userEmail) return;
+
+    const permission = prompt('Enter permission (view/comment/edit):', 'view');
+    if (!permission) return;
+
+    await handleShareFile(fileId, userEmail, permission);
   };
 
   useEffect(() => {
@@ -152,6 +262,9 @@ export default function FileManagerApp() {
             item={item}
             source={activeSource}
             theme={theme}
+            onDownload={handleDownload}
+            onShare={handleShareClick}
+            onDelete={handleDelete}
           />
         ))}
       </ul>
@@ -162,6 +275,16 @@ export default function FileManagerApp() {
     <div
       className={`h-full flex flex-col p-4 ${theme.app.bg} ${theme.app.text}`}
     >
+      {error && (
+        <div className="mb-4 p-2 bg-red-600 text-white rounded-lg">{error}</div>
+      )}
+
+      {success && (
+        <div className="mb-4 p-2 bg-green-600 text-white rounded-lg">
+          {success}
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">File Manager</h2>
         <div className="flex gap-2">

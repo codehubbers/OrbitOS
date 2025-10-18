@@ -34,10 +34,17 @@ const userSchema = new mongoose.Schema({
   roles: [
     {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['user', 'admin', 'editor'],
       default: 'user',
     },
   ],
+  permissions: {
+    canEdit: { type: Boolean, default: true },
+    canShare: { type: Boolean, default: true },
+    canDelete: { type: Boolean, default: false },
+    maxFileSize: { type: Number, default: 10485760 }, // 10MB
+    allowedFileTypes: [{ type: String }],
+  },
   preferences: {
     theme: { type: String, default: 'light' },
     wallpaper: { type: String, default: '/backgrounds/orbitos-default.jpg' },

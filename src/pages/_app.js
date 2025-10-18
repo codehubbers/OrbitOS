@@ -2,6 +2,7 @@
 
 import '@/styles/globals.css';
 import { AppProvider } from '@/context/AppContext';
+import { CollaborationProvider } from '@/context/CollaborationContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { NotificationProvider } from '@/system/services/NotificationRegistry';
 import { SettingsProvider } from '@/context/SettingsContext';
@@ -15,11 +16,13 @@ export default function MyApp({ Component, pageProps }) {
       <AuthProvider>
         <AppProvider>
           <NotificationProvider>
-            <SettingsProvider>
-              <DriveProvider>
-                <Component {...pageProps} />
-              </DriveProvider>
-            </SettingsProvider>
+            <CollaborationProvider>
+              <SettingsProvider>
+                <DriveProvider>
+                  <Component {...pageProps} />
+                </DriveProvider>
+              </SettingsProvider>
+            </CollaborationProvider>
           </NotificationProvider>
         </AppProvider>
       </AuthProvider>
