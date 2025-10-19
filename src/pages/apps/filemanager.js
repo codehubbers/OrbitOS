@@ -2,83 +2,71 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { useFileOperations } from '@/hooks/useFileOperations';
+import { useDrive } from '@/context/DriveContext';
 
-const FileItem = ({
-  item,
-  source,
-  theme,
-  isEditing,
-  onEdit,
-  onSave,
-  onDoubleClick,
-  onDragStart,
-  onDrop,
-  allItems,
-}) => {
-  const [editName, setEditName] = useState(item.name);
-  const [error, setError] = useState('');
-  const isFolder = item.type === 'folder' || item.content === null;
-  const icon = isFolder ? '📁' : '📄';
+const FileItem = ({ item, source, theme, onDownload, onShare, onDelete }) => {
+  const isGdrive = source === 'gdrive';
+  const icon = isGdrive ? (
+    <img src={item.iconLink} alt="" className="w-5 h-5" />
+  ) : (
+    '📄'
+  );
 
-  const validateName = (name) => {
-    if (!name.trim()) return 'Name cannot be empty';
-    if (name.includes('/') || name.includes('\\')) return 'Invalid characters';
-    if (name.length > 255) return 'Name too long';
-    if (allItems.some((i) => i.id !== item.id && i.name === name.trim())) {
-      return 'Name already exists';
-    }
-    return '';
-  };
+  const isDirectory = item.isDirectory;
 
-  const handleSave = () => {
-    const validationError = validateName(editName);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    onSave(item.id, editName);
-    setError('');
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      setEditName(item.name);
-      onEdit(null);
-      setError('');
-    }
-  };
+  // Get the correct file ID - use item.id for Google Drive, item._id for local files
+  const fileId = item.id || item._id;
 
   return (
     <li
-      className={`flex items-center p-2 rounded ${theme.app.button_subtle_hover} cursor-pointer`}
-      onDoubleClick={() => onDoubleClick(item)}
-      draggable={!isEditing}
-      onDragStart={(e) => onDragStart(e, item)}
-      onDragOver={(e) => isFolder && e.preventDefault()}
-      onDrop={(e) => isFolder && onDrop(e, item)}
+      className={`flex justify-between items-center p-2 rounded ${theme.app.button_subtle_hover}`}
     >
-      <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-center gap-3 flex-1 font-mono truncate">
         {icon}
-        {isEditing ? (
-          <div className="flex-1">
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={handleKeyDown}
-              className={`w-full px-2 py-1 rounded border ${error ? 'border-red-500' : theme.app.input}`}
-              autoFocus
-            />
-            {error && <div className="text-xs text-red-500 mt-1">{error}</div>}
-          </div>
+        <span
+          title={item.name}
+          style={{ color: isDirectory ? '#3b82f6' : undefined }}
+        >
+          {item.name}
+          {isDirectory ? '/' : ''}
+        </span>
+      </div>
+      <div className="flex gap-2">
+        {isGdrive ? (
+          <a
+            href={item.webViewLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`px-3 py-1 text-sm rounded ${theme.app.button}`}
+          >
+            Open
+          </a>
         ) : (
-          <span className="font-mono truncate" title={item.name}>
-            {item.name}
-          </span>
+          !isDirectory && (
+            <>
+              <button
+                onClick={() => onDownload(item.name)}
+                className={`px-2 py-1 text-sm rounded ${theme.app.button}`}
+                title="Download File"
+              >
+                Download
+              </button>
+              <button
+                onClick={() => onShare(fileId, item.name)} // FIXED: Pass fileId
+                className={`px-2 py-1 text-sm rounded ${theme.app.button}`}
+                title="Share File"
+              >
+                Share
+              </button>
+              <button
+                onClick={() => onDelete(fileId)} // Also fix delete
+                className="px-2 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
+                title="Delete File"
+              >
+                Delete
+              </button>
+            </>
+          )
         )}
       </div>
     </li>
@@ -97,48 +85,27 @@ export default function FileManagerApp() {
   const [localItems, setLocalItems] = useState([]);
   const [isLoadingLocal, setIsLoadingLocal] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [draggedItem, setDraggedItem] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  const [authStatus, setAuthStatus] = useState({
-    connected: false,
-    loading: true,
-  });
-  const [driveFiles, setDriveFiles] = useState([]);
-  const [isDriveLoading, setIsDriveLoading] = useState(false);
+  // --- THIS IS THE FIX ---
+  // We get syncFiles from the context, so it's defined and can be used.
+  const {
+    isConnected: isDriveConnected,
+    files: driveFiles,
+    isLoading: isDriveLoading,
+    syncFiles,
+    connectToDrive,
+  } = useDrive();
 
-  const checkAuthStatus = async () => {
-    try {
-      const res = await fetch('/api/auth/status');
-      const status = await res.json();
-      setAuthStatus({ ...status, loading: false });
-      return status;
-    } catch (error) {
-      console.error('Failed to check auth status:', error);
-      setAuthStatus({ connected: false, loading: false });
-      return { connected: false };
+  const showNotification = (message, type) => {
+    if (type === 'success') {
+      setSuccess(message);
+      setTimeout(() => setSuccess(null), 3000);
+    } else {
+      setError(message);
+      setTimeout(() => setError(null), 3000);
     }
-  };
-
-  const loadDriveFiles = async () => {
-    setIsDriveLoading(true);
-    try {
-      const status = await checkAuthStatus();
-      if (status.connected) {
-        const res = await fetch('/api/files/database');
-        const data = await res.json();
-        setDriveFiles(data);
-      }
-    } catch (error) {
-      console.error('Failed to load drive files:', error);
-    } finally {
-      setIsDriveLoading(false);
-    }
-  };
-
-  const connectToDrive = () => {
-    window.location.href = '/api/auth/google/login';
   };
 
   const fetchLocalItems = async () => {
@@ -148,6 +115,9 @@ export default function FileManagerApp() {
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       setLocalItems(data.files || []);
+    } catch (error) {
+      setError('Failed to load files.');
+      setLocalItems([]);
     } finally {
       setIsLoadingLocal(false);
     }
@@ -167,94 +137,87 @@ export default function FileManagerApp() {
         body: formData,
       });
       if (res.ok) {
-        fetchLocalItems();
+        await fetchLocalItems();
+        showNotification('File uploaded successfully', 'success');
+      } else {
+        throw new Error('Upload failed');
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      showNotification('File upload failed', 'error');
     } finally {
       setIsUploading(false);
       event.target.value = '';
     }
   };
 
-  const { createFile } = useFileOperations();
+  const handleDownload = (filename) => {
+    const url = `/api/files/download?file=${encodeURIComponent(filename)}`;
+    window.open(url, '_blank');
+  };
 
-  const handleCreateItem = async (type) => {
-    const defaultName = type === 'folder' ? 'New Folder' : 'New File.txt';
-
+  const handleShareFile = async (fileId, userEmail, permission) => {
     try {
-      if (activeSource === 'gdrive') {
-        const newItem = await createFile(
-          defaultName,
-          type === 'folder' ? null : '',
-          type,
-        );
-        await loadDriveFiles();
-        setEditingId(newItem.id);
+      const response = await fetch('/api/files/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: fileId, // This is the missing field
+          userEmail,
+          permission,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showNotification(data.message, 'success');
+      } else {
+        throw new Error(data.error || 'Share failed');
       }
     } catch (error) {
-      console.error('Failed to create item:', error);
+      showNotification(error.message, 'error');
     }
-    setShowNewModal(false);
   };
 
-  const { updateFile } = useFileOperations();
-
-  const handleRename = async (id, newName) => {
+  const handleDelete = async (fileId) => {
     try {
-      await updateFile(id, { name: newName });
-      loadDriveFiles();
+      const res = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      await fetchLocalItems();
+      showNotification('File deleted successfully', 'success');
     } catch (error) {
-      console.error('Failed to rename:', error);
-    }
-    setEditingId(null);
-  };
-
-  const handleDoubleClick = (item) => {
-    if (item.type === 'folder') {
-      // Navigate to folder
-      console.log('Navigate to folder:', item.name);
-    } else {
-      // Open file
-      console.log('Open file:', item.name);
+      console.error('Delete file failed:', error);
+      showNotification('File deletion failed', 'error');
     }
   };
 
-  const handleDragStart = (e, item) => {
-    setDraggedItem(item);
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  // Simple share handler that prompts for email
+  const handleShareClick = async (fileId, filename) => {
+    const userEmail = prompt(`Enter email to share "${filename}" with:`);
+    if (!userEmail) return;
 
-  const handleDrop = async (e, targetFolder) => {
-    e.preventDefault();
-    if (!draggedItem || draggedItem.id === targetFolder.id) return;
+    const permission = prompt('Enter permission (view/comment/edit):', 'view');
+    if (!permission) return;
 
-    console.log('Move', draggedItem.name, 'to', targetFolder.name);
-    // Implement move logic here
-    setDraggedItem(null);
+    await handleShareFile(fileId, userEmail, permission);
   };
 
   useEffect(() => {
     if (activeSource === 'local') {
       fetchLocalItems();
-    } else if (activeSource === 'gdrive') {
-      loadDriveFiles();
     }
   }, [activeSource]);
 
+  // Auto-sync every 10 seconds for Google Drive
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  // Auto-sync every 5 seconds
-  useEffect(() => {
-    if (activeSource === 'gdrive' && authStatus.connected) {
+    if (activeSource === 'gdrive' && isDriveConnected) {
       const interval = setInterval(() => {
-        loadDriveFiles();
-      }, 5000);
+        syncFiles(false);
+      }, 10000);
       return () => clearInterval(interval);
     }
-  }, [activeSource, authStatus.connected]);
+  }, [activeSource, isDriveConnected, syncFiles]);
 
   const itemsToDisplay = activeSource === 'local' ? localItems : driveFiles;
   const currentLoadingState =
@@ -264,7 +227,7 @@ export default function FileManagerApp() {
     if (currentLoadingState) {
       return <StatusMessage>Loading items...</StatusMessage>;
     }
-    if (activeSource === 'gdrive' && !authStatus.connected) {
+    if (activeSource === 'gdrive' && !isDriveConnected) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-8">
           <img
@@ -299,13 +262,9 @@ export default function FileManagerApp() {
             item={item}
             source={activeSource}
             theme={theme}
-            isEditing={editingId === item.id}
-            onEdit={setEditingId}
-            onSave={handleRename}
-            onDoubleClick={handleDoubleClick}
-            onDragStart={handleDragStart}
-            onDrop={handleDrop}
-            allItems={itemsToDisplay}
+            onDownload={handleDownload}
+            onShare={handleShareClick}
+            onDelete={handleDelete}
           />
         ))}
       </ul>
@@ -316,18 +275,19 @@ export default function FileManagerApp() {
     <div
       className={`h-full flex flex-col p-4 ${theme.app.bg} ${theme.app.text}`}
     >
+      {error && (
+        <div className="mb-4 p-2 bg-red-600 text-white rounded-lg">{error}</div>
+      )}
+
+      {success && (
+        <div className="mb-4 p-2 bg-green-600 text-white rounded-lg">
+          {success}
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">File Manager</h2>
         <div className="flex gap-2">
-          {activeSource === 'gdrive' && authStatus.connected && (
-            <button
-              onClick={() => setShowNewModal(true)}
-              className={`px-3 py-2 rounded ${theme.app.button}`}
-              title="New"
-            >
-              ➕ New
-            </button>
-          )}
           {activeSource === 'local' && (
             <>
               <input
@@ -346,10 +306,10 @@ export default function FileManagerApp() {
             </>
           )}
           {(activeSource === 'local' ||
-            (activeSource === 'gdrive' && authStatus.connected)) && (
+            (activeSource === 'gdrive' && isDriveConnected)) && (
             <button
               onClick={() =>
-                activeSource === 'gdrive' ? loadDriveFiles() : fetchLocalItems()
+                activeSource === 'gdrive' ? syncFiles(true) : fetchLocalItems()
               }
               className={`p-2 rounded ${theme.app.button}`}
               title="Refresh"
@@ -379,7 +339,7 @@ export default function FileManagerApp() {
                 onClick={() => setActiveSource('gdrive')}
                 className={`w-full text-left px-2 py-1 rounded ${activeSource === 'gdrive' ? 'bg-blue-500 text-white' : theme.app.button_subtle_hover}`}
               >
-                Google Drive {!authStatus.connected && '(Not Connected)'}
+                Google Drive {!isDriveConnected && '(Not Connected)'}
               </button>
             </li>
           </ul>
@@ -392,41 +352,6 @@ export default function FileManagerApp() {
           </div>
         </div>
       </div>
-
-      {/* New Item Modal */}
-      {showNewModal && (
-        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div
-            className={`p-6 rounded-lg shadow-2xl w-80 ${theme.app.bg} border ${theme.app.border}`}
-          >
-            <h3 className={`text-lg font-bold mb-4 ${theme.app.text}`}>
-              Create New
-            </h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => handleCreateItem('folder')}
-                className={`w-full p-3 rounded text-left flex items-center gap-3 ${theme.app.button_subtle_hover}`}
-              >
-                📁 Folder
-              </button>
-              <button
-                onClick={() => handleCreateItem('file')}
-                className={`w-full p-3 rounded text-left flex items-center gap-3 ${theme.app.button_subtle_hover}`}
-              >
-                📄 Text File
-              </button>
-            </div>
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setShowNewModal(false)}
-                className={`px-4 py-2 rounded ${theme.app.button}`}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

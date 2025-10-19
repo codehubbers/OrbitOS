@@ -133,24 +133,213 @@ export default function Desktop() {
       const keyShortcutService =
         new WindowTopBarKeyShortcutRegistrationService();
 
+      // Enhanced menu handlers
       const menuHandlers = {
-        onNew: () => {},
-        onOpen: () => {},
-        onOpenLocal: () => {},
-        onSave: () => {},
-        onSaveAs: () => {},
+        onNew: () => {
+          // Create a new blank document
+          const newNote = {
+            id: Date.now().toString(),
+            title: 'Untitled Note',
+            content: '',
+            createdAt: new Date().toISOString(),
+          };
+
+          // Save to localStorage or trigger state update
+          const existingNotes = JSON.parse(
+            localStorage.getItem('orbitos-notes') || '[]',
+          );
+          existingNotes.unshift(newNote);
+          localStorage.setItem('orbitos-notes', JSON.stringify(existingNotes));
+
+          // Reload the notes app to show new document
+          window.dispatchEvent(new CustomEvent('notes-refresh'));
+        },
+        onOpen: () => {
+          // Show document picker modal
+          const event = new CustomEvent('show-notes-picker', {
+            detail: { action: 'open' },
+          });
+          window.dispatchEvent(event);
+        },
+        onOpenLocal: () => {
+          // Create file input for local file opening
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = '.txt,.md,.json,text/plain';
+          fileInput.style.display = 'none';
+
+          fileInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const content = e.target.result;
+              const newNote = {
+                id: Date.now().toString(),
+                title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+                content: content,
+                createdAt: new Date().toISOString(),
+                isLocalFile: true,
+              };
+
+              // Save to notes collection
+              const existingNotes = JSON.parse(
+                localStorage.getItem('orbitos-notes') || '[]',
+              );
+              existingNotes.unshift(newNote);
+              localStorage.setItem(
+                'orbitos-notes',
+                JSON.stringify(existingNotes),
+              );
+
+              // Load this note
+              window.dispatchEvent(
+                new CustomEvent('notes-load', {
+                  detail: { note: newNote },
+                }),
+              );
+            };
+            reader.readAsText(file);
+          };
+
+          document.body.appendChild(fileInput);
+          fileInput.click();
+          document.body.removeChild(fileInput);
+        },
+        onSave: async () => {
+          const currentNote = JSON.parse(
+            localStorage.getItem('orbitos-current-note') || '{}',
+          );
+          const textarea = document.querySelector('.notes-textarea');
+          const content = textarea ? textarea.value : '';
+
+          try {
+            const response = await fetch('/api/files', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: currentNote._id, // Use database ID
+                title: currentNote.title,
+                content: content,
+              }),
+            });
+
+            if (response.ok) {
+              const { file } = await response.json();
+              // Update current note with saved version from database
+              localStorage.setItem(
+                'orbitos-current-note',
+                JSON.stringify(file),
+              );
+              window.dispatchEvent(
+                new CustomEvent('show-notification', {
+                  detail: {
+                    message: 'Note saved successfully!',
+                    type: 'success',
+                  },
+                }),
+              );
+            }
+          } catch (error) {
+            console.error('Save failed:', error);
+          }
+        },
+        onSaveAs: async () => {
+          const textarea = document.querySelector('.notes-textarea');
+          const content = textarea ? textarea.value : '';
+          const currentNote = JSON.parse(
+            localStorage.getItem('orbitos-current-note') || '{}',
+          );
+
+          const fileName = prompt(
+            'Save as:',
+            currentNote.name || 'Untitled Note',
+          );
+          if (!fileName) return;
+
+          try {
+            const response = await fetch('/api/files', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: fileName,
+                content: content,
+              }),
+            });
+
+            if (response.ok) {
+              const { file: savedFile } = await response.json();
+              localStorage.setItem(
+                'orbitos-current-note',
+                JSON.stringify(savedFile),
+              );
+
+              window.dispatchEvent(
+                new CustomEvent('notes-title-update', {
+                  detail: { name: fileName }, // Update to use 'name'
+                }),
+              );
+
+              window.dispatchEvent(
+                new CustomEvent('show-notification', {
+                  detail: {
+                    message: `File saved as "${fileName}"`,
+                    type: 'success',
+                  },
+                }),
+              );
+            }
+          } catch (error) {
+            console.error('Save As failed:', error);
+            window.dispatchEvent(
+              new CustomEvent('show-notification', {
+                detail: { message: 'Failed to save file', type: 'error' },
+              }),
+            );
+          }
+        },
         onPrint: () => window.print(),
         onUndo: () => document.execCommand('undo'),
         onRedo: () => document.execCommand('redo'),
         onCut: () => document.execCommand('cut'),
         onCopy: () => document.execCommand('copy'),
         onPaste: () => document.execCommand('paste'),
-        onFind: () => {},
-        onReplace: () => {},
+        onFind: () => {
+          window.dispatchEvent(
+            new CustomEvent('toggle-find-replace', {
+              detail: { show: true, mode: 'find' },
+            }),
+          );
+        },
+        onReplace: () => {
+          window.dispatchEvent(
+            new CustomEvent('toggle-find-replace', {
+              detail: { show: true, mode: 'replace' },
+            }),
+          );
+        },
         onFindInFiles: () => {},
-        onFindNext: () => {},
-        onFindPrevious: () => {},
-        onSelectFindNext: () => {},
+        onFindNext: () => {
+          window.dispatchEvent(new Event('find-next'));
+        },
+        onFindPrevious: () => {
+          window.dispatchEvent(new Event('find-previous'));
+        },
+        onSelectFindNext: () => {
+          const textarea = document.querySelector('.notes-textarea');
+          if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+            const selectedText = textarea.value.substring(
+              textarea.selectionStart,
+              textarea.selectionEnd,
+            );
+            window.dispatchEvent(
+              new CustomEvent('find-text', {
+                detail: { text: selectedText, forward: true },
+              }),
+            );
+          }
+        },
         onSelectFindPrevious: () => {},
         onFindVolatileNext: () => {},
         onFindVolatilePrevious: () => {},
