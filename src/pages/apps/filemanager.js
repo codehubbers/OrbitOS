@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useDrive } from '@/context/DriveContext';
+import { useAuth } from '@/context/AuthContext';
 
-const FileItem = ({ item, source, theme, onDownload, onShare, onDelete }) => {
+const FileItem = ({ item, source, theme, onDownload, onShare, onDelete, currentUserId }) => {
   const isGdrive = source === 'gdrive';
   const icon = isGdrive ? (
     <img src={item.iconLink} alt="" className="w-5 h-5" />
@@ -16,6 +17,9 @@ const FileItem = ({ item, source, theme, onDownload, onShare, onDelete }) => {
 
   // Get the correct file ID - use item.id for Google Drive, item._id for local files
   const fileId = item.id || item._id;
+
+  // Check if current user is the owner (for local files)
+  const isOwner = !isGdrive && item.owner && item.owner._id === currentUserId;
 
   return (
     <li
@@ -29,6 +33,9 @@ const FileItem = ({ item, source, theme, onDownload, onShare, onDelete }) => {
         >
           {item.name}
           {isDirectory ? '/' : ''}
+          {!isGdrive && !isOwner && (
+            <span className="text-xs text-gray-500 ml-2">(Shared)</span>
+          )}
         </span>
       </div>
       <div className="flex gap-2">
@@ -59,11 +66,15 @@ const FileItem = ({ item, source, theme, onDownload, onShare, onDelete }) => {
                 Share
               </button>
               <button
-                onClick={() => onDelete(fileId)} // Also fix delete
-                className="px-2 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600"
-                title="Delete File"
+                onClick={() => onDelete(fileId, item.name, isOwner)} // Also fixed delete
+                className={`px-2 py-1 text-sm rounded ${
+                  isOwner 
+                    ? 'bg-red-500 hover:bg-red-600 text-white' 
+                    : 'bg-orange-500 hover:bg-orange-600 text-white'
+                }`}
+                title={isOwner ? 'Delete File' : 'Unshare File'}
               >
-                Delete
+                {isOwner ? 'Delete' : 'Unshare'}
               </button>
             </>
           )
@@ -81,6 +92,7 @@ const StatusMessage = ({ children }) => (
 
 export default function FileManagerApp() {
   const { theme } = useTheme();
+  const { user: currentUser } = useAuth(); // Get current user from auth context
   const [activeSource, setActiveSource] = useState('gdrive');
   const [localItems, setLocalItems] = useState([]);
   const [isLoadingLocal, setIsLoadingLocal] = useState(true);
@@ -116,7 +128,8 @@ export default function FileManagerApp() {
       const data = await res.json();
       setLocalItems(data.files || []);
     } catch (error) {
-      setError('Failed to load files.');
+      console.error('Failed to load files:', error);
+      setError('Failed to load files from server.');
       setLocalItems([]);
     } finally {
       setIsLoadingLocal(false);
@@ -151,9 +164,42 @@ export default function FileManagerApp() {
     }
   };
 
-  const handleDownload = (filename) => {
-    const url = `/api/files/download?file=${encodeURIComponent(filename)}`;
-    window.open(url, '_blank');
+  const handleDownload = async (filename) => {
+    try {
+      // Use the same method as Notes app - fetch from /api/files
+      const response = await fetch('/api/files');
+      
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const files = data.files || [];
+      const file = files.find(f => f.name === filename);
+      
+      if (!file) {
+        throw new Error(`File "${filename}" not found`);
+      }
+      
+      const content = file.content || '';
+      
+      // Create download
+      const blob = new Blob([content], { type: 'text/plain' });
+      const downloadUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+      
+      showNotification(`Downloaded "${filename}" successfully`, 'success');
+    } catch (error) {
+      console.error('Download failed:', error);
+      showNotification(`Download failed: ${error.message}`, 'error');
+    }
   };
 
   const handleShareFile = async (fileId, userEmail, permission) => {
@@ -179,16 +225,34 @@ export default function FileManagerApp() {
       showNotification(error.message, 'error');
     }
   };
+  
+  const handleDelete = async (fileId, filename, isOwner) => {
+    if (!confirm(`Are you sure you want to ${isOwner ? 'delete' : 'unshare'} "${filename}"?`)) {
+      return;
+    }
 
-  const handleDelete = async (fileId) => {
     try {
-      const res = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
+      const response = await fetch(`/api/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to ${isOwner ? 'delete' : 'unshare'} file`);
+      }
+
+      const result = await response.json();
+      
+      setLocalItems(prev => prev.filter(item => (item.id !== fileId && item._id !== fileId)));
+      
+      showNotification(result.message, 'success');
       await fetchLocalItems();
-      showNotification('File deleted successfully', 'success');
     } catch (error) {
       console.error('Delete file failed:', error);
-      showNotification('File deletion failed', 'error');
+      showNotification(error.message, 'error');
     }
   };
 
@@ -265,6 +329,7 @@ export default function FileManagerApp() {
             onDownload={handleDownload}
             onShare={handleShareClick}
             onDelete={handleDelete}
+            currentUserId={currentUser?.id}
           />
         ))}
       </ul>

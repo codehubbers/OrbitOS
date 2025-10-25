@@ -11,7 +11,8 @@ export default async function handler(req, res) {
     try {
       const files = await File.find({
         $or: [{ owner: user._id }, { 'collaborators.user': user._id }],
-      }).populate('owner', 'username');
+      }).populate('owner', 'username _id'); // Include _id in populate
+      
       res.json({ files });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch files' });
