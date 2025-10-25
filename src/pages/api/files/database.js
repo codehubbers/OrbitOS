@@ -105,9 +105,21 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const files = Array.from(fileDatabase.values());
-    console.log('Getting files, database size:', fileDatabase.size);
-    res.status(200).json(files);
+    const { id } = req.query;
+    
+    if (id) {
+      // Get specific file by ID
+      const file = fileDatabase.get(id);
+      if (!file) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      res.status(200).json(file);
+    } else {
+      // Get all files
+      const files = Array.from(fileDatabase.values());
+      console.log('Getting files, database size:', fileDatabase.size);
+      res.status(200).json(files);
+    }
   } else if (req.method === 'POST') {
     const { name, content, type } = req.body;
     const fileId = `file_${Date.now()}`;

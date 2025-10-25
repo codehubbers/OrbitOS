@@ -66,11 +66,25 @@ export const useFileOperations = () => {
     }
   }, []);
 
+  const downloadFile = useCallback(async (filename) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/files/download?file=${encodeURIComponent(filename)}`);
+      if (res.ok) {
+        return await res.text();
+      }
+      throw new Error('Failed to download file');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     createFile,
     updateFile,
     deleteFile,
     getFiles,
+    downloadFile,
     isLoading,
   };
 };
