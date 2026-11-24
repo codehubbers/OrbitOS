@@ -34,7 +34,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci --ignore-scripts
+          # package-lock.json is intentionally not committed (see .gitignore),
+          # so key the npm cache on package.json instead.
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund --ignore-scripts
       - name: Prettier check on files changed by this PR / push
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -65,7 +68,10 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci --ignore-scripts
+          # package-lock.json is intentionally not committed (see .gitignore),
+          # so key the npm cache on package.json instead.
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund --ignore-scripts
       - run: npm test -- --ci --coverage
       - name: Upload coverage
         if: matrix.node == 20 && always()
@@ -86,11 +92,14 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci --ignore-scripts
+          # package-lock.json is intentionally not committed (see .gitignore),
+          # so key the npm cache on package.json instead.
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund --ignore-scripts
       - uses: actions/cache@v4
         with:
           path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package.json') }}-${{ github.sha }}
           restore-keys: |
-            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            nextjs-${{ runner.os }}-${{ hashFiles('package.json') }}-
       - run: npm run build
