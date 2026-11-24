@@ -39,7 +39,7 @@ function createResponse() {
 function localRequest(method = 'POST') {
   return {
     method,
-    headers: {},
+    headers: { host: 'localhost:3000', 'x-forwarded-for': '::1' },
     cookies: {},
     socket: { remoteAddress: '::1' },
   };
@@ -50,6 +50,7 @@ const originalNodeEnv = process.env.NODE_ENV;
 describe('local admin authentication', () => {
   beforeEach(() => {
     process.env.NODE_ENV = 'development';
+    process.env.NEXT_PUBLIC_ENABLE_LOCAL_ADMIN = 'true';
     jest.clearAllMocks();
   });
 
@@ -63,7 +64,12 @@ describe('local admin authentication', () => {
     await localAdminHandler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    const { user, token } = res.json.mock.calls[0][0];
+    const { user, token: bodyToken } = res.json.mock.calls[0][0];
+    expect(bodyToken).toBeUndefined();
+    const cookie = res.setHeader.mock.calls.find(
+      ([name]) => name === 'Set-Cookie',
+    )[1];
+    const token = cookie.match(/^token=([^;]+);/)[1];
     expect(user).toMatchObject({
       username: 'local-admin',
       email: 'admin@localhost',
@@ -103,13 +109,38 @@ describe('local admin authentication', () => {
     const req = {
       ...localRequest(),
       socket: { remoteAddress: '192.0.2.10' },
-      headers: { 'x-forwarded-for': '127.0.0.1' },
+      headers: { host: 'localhost:3000', 'x-forwarded-for': '127.0.0.1' },
     };
     const res = createResponse();
     await localAdminHandler(req, res);
 
     expect(isLocalAdminRequest(req)).toBe(false);
     expect(res.status).toHaveBeenCalledWith(403);
+  });
+
+  it('rejects tunnelled requests that reach the server from loopback', async () => {
+    const req = {
+      ...localRequest(),
+      headers: {
+        host: 'abc123.ngrok-free.app',
+        'x-forwarded-for': '203.0.113.7',
+      },
+    };
+    const res = createResponse();
+    await localAdminHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+
+  it('rejects DNS-rebinding requests with a non-local Host header', () => {
+    const req = { ...localRequest(), headers: { host: 'evil.example:3000' } };
+    expect(isLocalAdminRequest(req)).toBe(false);
+  });
+
+  it('stays off in development unless explicitly enabled', async () => {
+    delete process.env.NEXT_PUBLIC_ENABLE_LOCAL_ADMIN;
+    const res = createResponse();
+    await localAdminHandler(localRequest(), res);
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 
   it('disables the endpoint and existing local tokens outside development', async () => {
