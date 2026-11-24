@@ -217,23 +217,24 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
           </motion.button>
         </form>
 
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-6 border-t border-white/20 pt-6 text-center">
-            <motion.button
-              type="button"
-              disabled={isLoading}
-              onClick={handleLocalAdminLogin}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-3 font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isLoading ? 'Signing in...' : 'Continue as Local Admin'}
-            </motion.button>
-            <p className="mt-2 text-xs text-white/60">
-              Local development only. No account or password required.
-            </p>
-          </div>
-        )}
+        {process.env.NODE_ENV === 'development' &&
+          process.env.NEXT_PUBLIC_ENABLE_LOCAL_ADMIN === 'true' && (
+            <div className="mt-6 border-t border-white/20 pt-6 text-center">
+              <motion.button
+                type="button"
+                disabled={isLoading}
+                onClick={handleLocalAdminLogin}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-3 font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLoading ? 'Signing in...' : 'Continue as Local Admin'}
+              </motion.button>
+              <p className="mt-2 text-xs text-white/60">
+                Local development only. No account or password required.
+              </p>
+            </div>
+          )}
       </div>
     </motion.div>
   );
