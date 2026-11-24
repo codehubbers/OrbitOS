@@ -25,7 +25,9 @@ import MonitorApp from '@/pages/apps/monitor';
 import FilemanagerApp from '@/pages/apps/filemanager';
 import Calculator from '@/pages/apps/calculator';
 import AppStoreApp from '@/pages/apps/appstore';
+import WeatherApp from '@/pages/apps/weather';
 import TabManager from './TabManager';
+import WeatherWidget from './WeatherWidget';
 
 const appComponents = {
   notes: NotesApp,
@@ -35,6 +37,7 @@ const appComponents = {
   filemanager: FilemanagerApp,
   calculator: Calculator,
   appstore: AppStoreApp,
+  weather: WeatherApp,
   'tab-manager': TabManager,
 };
 
@@ -446,6 +449,9 @@ export default function Desktop() {
           }))}
         />
       ))}
+
+      {/* Desktop Widgets */}
+      <WeatherWidget />
 
       {/* Open Application Windows */}
       {state.openApps.map((app) => renderWindow(app))}
