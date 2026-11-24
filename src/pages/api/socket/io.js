@@ -15,6 +15,7 @@ const socketHandler = (req, res) => {
         const token = socket.handshake.auth.token;
         const user = await verifyToken({
           headers: { authorization: `Bearer ${token}` },
+          socket: { remoteAddress: socket.handshake.address },
         });
         socket.userId = user._id;
         next();
