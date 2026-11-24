@@ -6,7 +6,7 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  error: null
+  error: null,
 };
 
 function authReducer(state, action) {
@@ -17,12 +17,12 @@ function authReducer(state, action) {
         user: action.payload.user,
         isAuthenticated: true,
         isLoading: false,
-        error: null
+        error: null,
       };
     case 'UPDATE_USER':
       return {
         ...state,
-        user: action.payload
+        user: action.payload,
       };
     case 'LOGOUT':
       return {
@@ -30,23 +30,23 @@ function authReducer(state, action) {
         user: null,
         isAuthenticated: false,
         isLoading: false,
-        error: null
+        error: null,
       };
     case 'SET_LOADING':
       return {
         ...state,
-        isLoading: action.payload
+        isLoading: action.payload,
       };
     case 'SET_ERROR':
       return {
         ...state,
         error: action.payload,
-        isLoading: false
+        isLoading: false,
       };
     case 'CLEAR_ERROR':
       return {
         ...state,
-        error: null
+        error: null,
       };
     default:
       return state;
@@ -59,12 +59,12 @@ export function AuthProvider({ children }) {
   const login = async (email, password, rememberMe = false) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password, rememberMe })
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await response.json();
@@ -81,15 +81,35 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginLocalAdmin = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const response = await fetch('/api/auth/local-admin', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Local admin login failed');
+      }
+
+      dispatch({ type: 'LOGIN_SUCCESS', payload: data });
+      return data;
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      throw error;
+    }
+  };
+
   const register = async (userData) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
       });
 
       const data = await response.json();
@@ -110,7 +130,7 @@ export function AuthProvider({ children }) {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
       });
     } catch (error) {
       console.error('Logout error:', error);
@@ -122,7 +142,7 @@ export function AuthProvider({ children }) {
   const checkAuth = async () => {
     try {
       const response = await fetch('/api/auth/me', {
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -140,7 +160,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
-        cache: 'no-cache'
+        cache: 'no-cache',
       });
 
       if (response.ok) {
@@ -160,10 +180,11 @@ export function AuthProvider({ children }) {
   const value = {
     ...state,
     login,
+    loginLocalAdmin,
     register,
     logout,
     refreshUser,
-    clearError: () => dispatch({ type: 'CLEAR_ERROR' })
+    clearError: () => dispatch({ type: 'CLEAR_ERROR' }),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

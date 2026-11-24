@@ -13,7 +13,7 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login } = useAuth();
+  const { login, loginLocalAdmin } = useAuth();
 
   const validateForm = () => {
     const newErrors = {};
@@ -44,6 +44,19 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
         formData.password,
         formData.rememberMe,
       );
+      onSuccess(result);
+    } catch (error) {
+      setErrors({ submit: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLocalAdminLogin = async () => {
+    setIsLoading(true);
+    setErrors({});
+    try {
+      const result = await loginLocalAdmin();
       onSuccess(result);
     } catch (error) {
       setErrors({ submit: error.message });
@@ -203,6 +216,24 @@ export default function LoginForm({ onSuccess, onBack, theme }) {
             )}
           </motion.button>
         </form>
+
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 border-t border-white/20 pt-6 text-center">
+            <motion.button
+              type="button"
+              disabled={isLoading}
+              onClick={handleLocalAdminLogin}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-3 font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? 'Signing in...' : 'Continue as Local Admin'}
+            </motion.button>
+            <p className="mt-2 text-xs text-white/60">
+              Local development only. No account or password required.
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

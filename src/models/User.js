@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema({
     theme: { type: String, default: 'light' },
     wallpaper: { type: String, default: '/backgrounds/orbitos-default.jpg' },
     notifications: { type: Boolean, default: true },
+    weather: {
+      unit: { type: String, enum: ['C', 'F'], default: 'C' },
+      city: { type: String, trim: true, maxlength: 100 },
+      latitude: { type: Number, min: -90, max: 90 },
+      longitude: { type: Number, min: -180, max: 180 },
+    },
   },
   installedApps: [
     {

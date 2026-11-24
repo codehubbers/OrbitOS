@@ -1,5 +1,5 @@
 import dbConnect from '../../../lib/mongodb';
-import { verifyToken } from '../../../lib/auth';
+import { hasLocalAdminSession, verifyToken } from '../../../lib/auth';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,7 +7,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
+    if (!hasLocalAdminSession(req)) {
+      await dbConnect();
+    }
     const user = await verifyToken(req);
 
     // Prevent caching to ensure fresh user data
@@ -22,6 +24,8 @@ export default async function handler(req, res) {
         email: user.email,
         displayName: user.displayName,
         avatar: user.avatar,
+        roles: user.roles,
+        permissions: user.permissions,
         createdAt: user.createdAt,
         preferences: user.preferences,
         installedApps: user.installedApps || [],

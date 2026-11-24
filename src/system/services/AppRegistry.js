@@ -7,6 +7,7 @@ import MonitorApp from '../apps/MonitorApp';
 import FilemanagerApp from '../apps/FilemanagerApp';
 import Calculator from '../apps/Calculator';
 import AppStoreApp from '../apps/AppStoreApp';
+import WeatherApp from '../apps/WeatherApp';
 
 /**
  * A central registry for all available applications.
@@ -23,6 +24,7 @@ class AppRegistry {
       FilemanagerApp,
       Calculator,
       AppStoreApp,
+      WeatherApp,
     ];
   }
 
