@@ -8,6 +8,7 @@ import FilemanagerApp from '../apps/FilemanagerApp';
 import Calculator from '../apps/Calculator';
 import AppStoreApp from '../apps/AppStoreApp';
 import WeatherApp from '../apps/WeatherApp';
+import MusicPlayerApp from '../apps/MusicPlayerApp';
 
 /**
  * A central registry for all available applications.
@@ -25,6 +26,7 @@ class AppRegistry {
       Calculator,
       AppStoreApp,
       WeatherApp,
+      MusicPlayerApp,
     ];
   }
 
