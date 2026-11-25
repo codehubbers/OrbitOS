@@ -94,3 +94,53 @@ describe('BrowserApp', () => {
     expect(container.querySelector('iframe')).toBeNull();
   });
 });
+
+describe('BrowserApp history', () => {
+  const type = (value) => {
+    fireEvent.change(screen.getByLabelText('Address'), { target: { value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+  };
+  const frameSrc = (c) => c.querySelector('iframe')?.getAttribute('src');
+
+  it('goes back and forward between opened pages and the start page', () => {
+    const { container } = render(<BrowserApp />);
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
+
+    type('example.com');
+    type('en.wikipedia.org/wiki/Mars');
+    expect(frameSrc(container)).toBe('https://en.wikipedia.org/wiki/Mars');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(frameSrc(container)).toBe('https://example.com/');
+    expect(screen.getByLabelText('Address')).toHaveValue(
+      'https://example.com/',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('Start page')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
+    expect(frameSrc(container)).toBe('https://example.com/');
+  });
+
+  it('drops forward history after opening a new page', () => {
+    const { container } = render(<BrowserApp />);
+    type('example.com');
+    type('archive.org');
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    type('en.wikipedia.org');
+    expect(frameSrc(container)).toBe('https://en.wikipedia.org/');
+    expect(screen.getByRole('button', { name: 'Forward' })).toBeDisabled();
+  });
+
+  it('reload re-mounts the frame', () => {
+    const { container } = render(<BrowserApp />);
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeDisabled();
+    type('example.com');
+    const before = container.querySelector('iframe');
+    fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+    const after = container.querySelector('iframe');
+    expect(after).not.toBe(before);
+    expect(after).toHaveAttribute('src', 'https://example.com/');
+  });
+});

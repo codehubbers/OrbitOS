@@ -16,8 +16,25 @@ const QUICK_LINKS = [
 export default function BrowserApp() {
   const { theme } = useTheme();
   const [input, setInput] = useState('');
-  const [currentUrl, setCurrentUrl] = useState(null);
   const [error, setError] = useState('');
+  // History of addresses opened from the address bar or start page.
+  // null = start page. Navigation inside the frame can't be tracked because
+  // cross-origin pages don't expose their location to us.
+  const [history, setHistory] = useState({ entries: [null], index: 0 });
+  const [reloadKey, setReloadKey] = useState(0);
+  const currentUrl = history.entries[history.index];
+
+  const show = (entries, index) => {
+    setError('');
+    setInput(entries[index] || '');
+    setHistory({ entries, index });
+  };
+
+  const open = (href) => {
+    if (href === currentUrl) return;
+    const entries = [...history.entries.slice(0, history.index + 1), href];
+    show(entries, entries.length - 1);
+  };
 
   const go = (value) => {
     const href = normalizeUrl(value);
@@ -25,16 +42,14 @@ export default function BrowserApp() {
       setError('Only http:// and https:// addresses can be opened.');
       return;
     }
-    setError('');
-    setInput(href);
-    setCurrentUrl(href);
+    open(href);
   };
 
-  const goHome = () => {
-    setError('');
-    setInput('');
-    setCurrentUrl(null);
-  };
+  const goHome = () => open(null);
+  const canBack = history.index > 0;
+  const canForward = history.index < history.entries.length - 1;
+  const back = () => canBack && show(history.entries, history.index - 1);
+  const forward = () => canForward && show(history.entries, history.index + 1);
 
   const blocked = currentUrl && isFrameBlocked(currentUrl);
   const host = currentUrl ? new URL(currentUrl).hostname : '';
@@ -48,6 +63,33 @@ export default function BrowserApp() {
           go(input);
         }}
       >
+        <button
+          type="button"
+          onClick={back}
+          disabled={!canBack}
+          className={`px-2 py-1 rounded disabled:opacity-40 ${theme.app.button}`}
+          aria-label="Back"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          onClick={forward}
+          disabled={!canForward}
+          className={`px-2 py-1 rounded disabled:opacity-40 ${theme.app.button}`}
+          aria-label="Forward"
+        >
+          →
+        </button>
+        <button
+          type="button"
+          onClick={() => setReloadKey((k) => k + 1)}
+          disabled={!currentUrl}
+          className={`px-2 py-1 rounded disabled:opacity-40 ${theme.app.button}`}
+          aria-label="Reload"
+        >
+          ⟳
+        </button>
         <button
           type="button"
           onClick={goHome}
@@ -133,7 +175,7 @@ export default function BrowserApp() {
 
         {currentUrl && !blocked && (
           <iframe
-            key={currentUrl}
+            key={`${currentUrl}#${reloadKey}`}
             src={currentUrl}
             className="w-full h-full border-none"
             title="Browser"
