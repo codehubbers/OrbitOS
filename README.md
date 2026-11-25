@@ -359,7 +359,7 @@ Need access to the server or the logs? Ask in Discord: https://discord.gg/NW2YZA
 
 ## License
 
-MIT License - feel free to use this project for learning and development.
+This project is released under GNU GPLv3. For more details see [LICENSE](LICENSE).
 
 ## Support
 
