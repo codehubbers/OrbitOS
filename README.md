@@ -313,20 +313,37 @@ web-os-project/
 - Ensure responsive design
 - Add proper accessibility attributes
 
-## Deployment
+## Deployment (self-hosting with Docker)
 
-### Frontend (Vercel)
+The live site, https://orbitos.codehubbers.com, runs from this repo in Docker on our own server behind a Cloudflare Tunnel. Anything merged to `main` is deployed automatically once CI passes (see [#123](https://github.com/codehubbers/OrbitOS/issues/123)).
 
-```bash
-npm run build
-```
+### Run it yourself
 
-### Backend (Node.js hosting)
+You need Docker with the Compose plugin.
 
 ```bash
-cd src/server
-node index.js
+git clone https://github.com/codehubbers/OrbitOS.git && cd OrbitOS
+bash deploy/deploy.sh
+curl http://127.0.0.1:4100/api/health
 ```
+
+`deploy/deploy.sh` pulls `main` and builds the image. It starts the app and MongoDB, then waits for the health check. On the first run it creates `deploy/.env` with a random `JWT_SECRET`. Put optional keys there too, such as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. That file is never committed.
+
+What the compose setup does (`deploy/docker-compose.yml`):
+
+- The app listens on `127.0.0.1:4100` only. Put a reverse proxy or a Cloudflare Tunnel in front of it to make it public.
+- MongoDB has no published port and runs on an internal network with no internet access. Its data lives in the `orbitos_mongo-data` volume.
+- The app container runs as a non-root user. It has a read-only filesystem and all Linux capabilities dropped, with memory limits and log rotation.
+
+Set `ORBITOS_PORT` to use a different local port.
+
+### On our server
+
+- A job checks `main` every 5 minutes. It deploys only when every GitHub check on the new commit is green, and rolls back if the health check fails.
+- The job's script and compose file live outside the repo and are owned by root. A merged PR can only change what runs inside the containers, not on the host.
+- MongoDB is backed up every night to a private Cloudflare R2 bucket and kept for 14 days.
+
+Need access to the server or the logs? Ask in Discord: https://discord.gg/NW2YZACf4k
 
 ## Future Enhancements
 
