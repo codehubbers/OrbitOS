@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import MusicPlayerApp from '@/system/apps/MusicPlayerApp';
 import AppRegistry from '@/system/services/AppRegistry';
 import {
@@ -30,13 +30,8 @@ describe('Music Player app manifest', () => {
 });
 
 describe('Default playlist', () => {
-  it('contains exactly the hardcoded welcome track', () => {
-    expect(DEFAULT_PLAYLIST).toHaveLength(1);
-    expect(DEFAULT_PLAYLIST[0]).toMatchObject({
-      title: 'Going Home',
-      artist: 'Kenny G',
-      src: '/music/going-home.mp3',
-    });
+  it('ships empty: no bundled (copyrighted) music', () => {
+    expect(DEFAULT_PLAYLIST).toEqual([]);
   });
 });
 
@@ -92,15 +87,40 @@ describe('isAudioFile', () => {
 });
 
 describe('MusicProvider playback service', () => {
-  it('exposes the hardcoded track and transport state', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('does nothing on play while the playlist is empty', () => {
+    render(
+      <MusicProvider>
+        <PlayerProbe />
+      </MusicProvider>,
+    );
+    expect(screen.getByTestId('title')).toBeEmptyDOMElement();
+    fireEvent.click(screen.getByText('toggle'));
+    expect(window.HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+  });
+
+  it('does not start any music on the first desktop interaction', () => {
+    render(
+      <MusicProvider>
+        <PlayerProbe />
+      </MusicProvider>,
+    );
+    fireEvent.pointerDown(window);
+    fireEvent.keyDown(window, { key: 'a' });
+    expect(window.HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+  });
+
+  it('exposes the current track and transport state', () => {
     render(
       <MusicProvider>
         <PlayerProbe />
       </MusicProvider>,
     );
 
-    expect(screen.getByTestId('title')).toHaveTextContent('Going Home');
-    expect(screen.getByTestId('artist')).toHaveTextContent('Kenny G');
+    fireEvent.click(screen.getByText('add'));
+    expect(screen.getByTestId('title')).toHaveTextContent('My Song');
+    expect(screen.getByTestId('artist')).toHaveTextContent('My Files');
     expect(screen.getByTestId('playing')).toHaveTextContent('false');
 
     fireEvent.click(screen.getByText('toggle'));
@@ -126,9 +146,8 @@ describe('MusicProvider playback service', () => {
         <PlayerProbe />
       </MusicProvider>,
     );
-    act(() => {
-      fireEvent.click(screen.getByText('toggle'));
-    });
+    fireEvent.click(screen.getByText('add'));
+    fireEvent.click(screen.getByText('toggle'));
     rerender(
       <MusicProvider>
         <PlayerProbe />
@@ -139,22 +158,21 @@ describe('MusicProvider playback service', () => {
     expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
   });
 
-  it('adds tracks from user files, keeping the welcome track first', () => {
+  it('adds tracks from user files and ignores duplicates', () => {
     render(
       <MusicProvider>
         <PlayerProbe />
       </MusicProvider>,
     );
 
-    expect(screen.getByTestId('playlist-length')).toHaveTextContent('1');
+    expect(screen.getByTestId('playlist-length')).toHaveTextContent('0');
 
     fireEvent.click(screen.getByText('add'));
-    expect(screen.getByTestId('playlist-length')).toHaveTextContent('2');
-    expect(screen.getByTestId('title')).toHaveTextContent('Going Home');
+    expect(screen.getByTestId('playlist-length')).toHaveTextContent('1');
     expect(screen.getByTestId('last-track')).toHaveTextContent('My Song');
 
     // Duplicates are ignored
     fireEvent.click(screen.getByText('add'));
-    expect(screen.getByTestId('playlist-length')).toHaveTextContent('2');
+    expect(screen.getByTestId('playlist-length')).toHaveTextContent('1');
   });
 });

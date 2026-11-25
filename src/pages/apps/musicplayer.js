@@ -1,7 +1,11 @@
 // src/pages/apps/musicplayer.js
 
 import { useEffect, useRef, useState } from 'react';
-import { useMusic, isAudioFile } from '@/context/MusicContext';
+import {
+  useMusic,
+  isAudioFile,
+  MAX_AUDIO_UPLOAD_BYTES,
+} from '@/context/MusicContext';
 import { useTheme } from '@/context/ThemeContext';
 
 const formatTime = (seconds) => {
@@ -127,6 +131,19 @@ function LibraryPanel({ theme }) {
     const file = event.target.files[0];
     event.target.value = '';
     if (!file) return;
+    if (!isAudioFile({ name: file.name, mimeType: file.type })) {
+      setError('Please choose an audio file (mp3, wav, ogg, m4a, flac…).');
+      return;
+    }
+    if (file.size > MAX_AUDIO_UPLOAD_BYTES) {
+      setError(
+        `"${file.name}" is too large. The maximum upload size is ${
+          MAX_AUDIO_UPLOAD_BYTES / (1024 * 1024)
+        } MB.`,
+      );
+      return;
+    }
+    setError(null);
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -139,7 +156,13 @@ function LibraryPanel({ theme }) {
             mimeType: file.type || 'audio/mpeg',
           }),
         });
-        if (!res.ok) throw new Error('Upload failed');
+        if (!res.ok) {
+          throw new Error(
+            res.status === 413
+              ? 'Upload failed: the file is too large.'
+              : 'Upload failed',
+          );
+        }
         const data = await res.json();
         addFileTrack(data.file);
         scanFiles();
@@ -408,6 +431,12 @@ export default function MusicPlayer() {
           >
             Playlist
           </div>
+          {playlist.length === 0 && (
+            <div className={`px-3 py-4 text-sm ${theme.app.text_subtle}`}>
+              Your playlist is empty. Open <strong>My Files</strong> to upload
+              audio or add tracks you already have.
+            </div>
+          )}
           {playlist.map((track, index) => {
             const isCurrent = index === currentIndex;
             return (

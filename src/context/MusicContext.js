@@ -10,19 +10,14 @@ import {
 } from 'react';
 
 /**
- * The hardcoded default playlist.
- * "Going Home" by Kenny G is the built-in welcome track and the only
- * music bundled with the player.
+ * The player starts with an empty playlist: OrbitOS does not bundle any
+ * music (we can't redistribute copyrighted recordings), so users add
+ * tracks from their own files.
  */
-export const DEFAULT_PLAYLIST = [
-  {
-    id: 'going-home',
-    title: 'Going Home',
-    artist: 'Kenny G',
-    album: 'OrbitOS Welcome',
-    src: '/music/going-home.mp3',
-  },
-];
+export const DEFAULT_PLAYLIST = [];
+
+/** Largest audio file the player will upload (stored base64 in MongoDB). */
+export const MAX_AUDIO_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 const REPEAT_MODES = ['off', 'all', 'one'];
 
@@ -103,11 +98,9 @@ export function MusicProvider({ children }) {
     const onPause = () => setIsPlaying(false);
     const onError = () => {
       setIsPlaying(false);
+      if (!audio.getAttribute('src')) return;
       setError(
-        `Audio file not found. Place "${currentTrack?.title || 'track'}" at ${audio.src
-          .split('/')
-          .slice(-2)
-          .join('/')} to enable playback.`,
+        `Couldn't play "${currentTrack?.title || 'this track'}". The file may be missing or in an unsupported format.`,
       );
     };
     const onEnded = () => {
@@ -176,7 +169,8 @@ export function MusicProvider({ children }) {
 
   const play = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    // Nothing to play until the user adds a track.
+    if (!audio || playlistRef.current.length === 0) return;
     audio.play().catch(() => {
       /* autoplay restrictions or missing file — error state handles it */
     });
@@ -273,8 +267,8 @@ export function MusicProvider({ children }) {
 
   /**
    * Adds a track from the user's files to the playlist.
-   * The hardcoded welcome track always stays first; duplicates (by id)
-   * are ignored.
+   * Tracks keep the order they were added in; duplicates (by id) are
+   * ignored.
    */
   const addTrack = useCallback((track) => {
     if (!track || !track.id || !track.src) return;
@@ -343,25 +337,6 @@ export function MusicProvider({ children }) {
       /* Media Session not fully supported — ignore */
     }
   }, [currentTrack, isPlaying, play, pause, previous, next, seekTo]);
-
-  // Welcome music: start "Going Home" on the user's very first interaction
-  // with the desktop (autoplay policies require a genuine user gesture).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const startWelcome = () => {
-      if (!hasStartedRef.current) {
-        play();
-      }
-      window.removeEventListener('pointerdown', startWelcome);
-      window.removeEventListener('keydown', startWelcome);
-    };
-    window.addEventListener('pointerdown', startWelcome);
-    window.addEventListener('keydown', startWelcome);
-    return () => {
-      window.removeEventListener('pointerdown', startWelcome);
-      window.removeEventListener('keydown', startWelcome);
-    };
-  }, [play]);
 
   const value = {
     playlist,

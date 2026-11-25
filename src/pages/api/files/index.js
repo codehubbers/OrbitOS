@@ -2,6 +2,18 @@ import dbConnect from '../../../lib/mongodb';
 import { verifyToken } from '../../../lib/auth';
 import File from '../../../models/File'; // You'll need to create this model
 
+// Audio is uploaded as a base64 data URL; an 8 MB file is ~10.7 MB encoded.
+// Stays below MongoDB's 16 MB document limit.
+export const config = {
+  api: { bodyParser: { sizeLimit: '12mb' } },
+};
+
+const MIME_TYPE = /^[a-z0-9][\w.+-]{0,63}\/[a-z0-9][\w.+-]{0,63}$/i;
+
+export function isValidMimeType(value) {
+  return typeof value === 'string' && MIME_TYPE.test(value);
+}
+
 export default async function handler(req, res) {
   await dbConnect();
   const user = await verifyToken(req);
@@ -33,6 +45,9 @@ export default async function handler(req, res) {
     // Create or update a file (Save/Save As)
     try {
       const { id, name, content, mimeType } = req.body;
+      if (mimeType !== undefined && !isValidMimeType(mimeType)) {
+        return res.status(400).json({ error: 'Invalid mimeType' });
+      }
 
       if (id) {
         // Update existing file

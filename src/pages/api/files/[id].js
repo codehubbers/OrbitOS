@@ -3,17 +3,58 @@ import dbConnect from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
 import File from '@/models/File';
 
+const OBJECT_ID = /^[a-f0-9]{24}$/i;
+
+// Only media types that browsers cannot execute are served inline.
+// Anything else (text/html, image/svg+xml, application/javascript...) is
+// sent as plain text so a shared file can never run script on our origin.
+const INLINE_MIME = /^(audio\/[\w.+-]+|image\/(png|jpe?g|gif|webp|avif))$/i;
+
+export function getSafeMimeType(mimeType) {
+  const type = String(mimeType || '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase();
+  return INLINE_MIME.test(type) ? type : 'text/plain; charset=utf-8';
+}
+
+/** Parses a single `bytes=start-end` Range header. Returns null if invalid. */
+export function parseRange(header, size) {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header || '');
+  if (!match || (match[1] === '' && match[2] === '')) return null;
+  let start;
+  let end;
+  if (match[1] === '') {
+    // Suffix range: last N bytes
+    start = Math.max(size - Number(match[2]), 0);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] === '' ? size - 1 : Math.min(Number(match[2]), size - 1);
+  }
+  if (start > end || start >= size) return null;
+  return { start, end };
+}
+
 /**
- * Streams a stored file's content with its real mime type so it can be
- * used directly as an <audio>/<img>/etc. source. Audio content is stored
- * as a base64 data URL and decoded on the way out.
+ * Streams a stored file's content so it can be used directly as an
+ * <audio>/<img> source. Content saved as a base64 data URL is decoded.
+ * Supports HTTP Range requests so the player's seek bar works.
  */
 async function handleGet(req, res) {
-  const user = await verifyToken(req);
+  let user;
+  try {
+    user = await verifyToken(req);
+  } catch {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   const { id } = req.query;
 
-  if (!id) {
+  if (!id || typeof id !== 'string') {
     return res.status(400).json({ error: 'File ID is required' });
+  }
+  if (!OBJECT_ID.test(id)) {
+    return res.status(404).json({ error: 'File not found' });
   }
 
   const file = await File.findOne({
@@ -25,19 +66,43 @@ async function handleGet(req, res) {
   }
 
   const content = file.content || '';
-  const dataUrlMatch = content.match(/^data:([^;]+);base64,(.*)$/s);
+  const dataUrlMatch = /^data:([^;,]+)(;[^,]*)?;base64,(.*)$/s.exec(content);
+  const buffer = dataUrlMatch
+    ? Buffer.from(dataUrlMatch[3], 'base64')
+    : Buffer.from(content, 'utf8');
+  const contentType = getSafeMimeType(
+    dataUrlMatch ? dataUrlMatch[1] : file.mimeType,
+  );
 
-  if (dataUrlMatch) {
-    const mimeType = dataUrlMatch[1];
-    const buffer = Buffer.from(dataUrlMatch[2], 'base64');
-    res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Length', buffer.length);
-    res.setHeader('Accept-Ranges', 'none');
-    return res.status(200).send(buffer);
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'none'; media-src 'self'; img-src 'self'; sandbox",
+  );
+  res.setHeader('Cache-Control', 'private, no-cache');
+  res.setHeader('Accept-Ranges', 'bytes');
+  if (contentType.startsWith('text/plain')) {
+    res.setHeader('Content-Disposition', 'attachment');
   }
 
-  res.setHeader('Content-Type', file.mimeType || 'text/plain');
-  return res.status(200).send(content);
+  if (req.headers.range) {
+    const range = parseRange(req.headers.range, buffer.length);
+    if (!range) {
+      res.setHeader('Content-Range', `bytes */${buffer.length}`);
+      return res.status(416).end();
+    }
+    const chunk = buffer.subarray(range.start, range.end + 1);
+    res.setHeader(
+      'Content-Range',
+      `bytes ${range.start}-${range.end}/${buffer.length}`,
+    );
+    res.setHeader('Content-Length', chunk.length);
+    return res.status(206).send(chunk);
+  }
+
+  res.setHeader('Content-Length', buffer.length);
+  return res.status(200).send(buffer);
 }
 
 export default async function handler(req, res) {
