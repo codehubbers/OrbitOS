@@ -16,6 +16,7 @@ const FileSchema = new mongoose.Schema({
   ],
   lastModified: { type: Date, default: Date.now },
   isPublic: { type: Boolean, default: false },
+  mimeType: { type: String, default: 'text/plain' },
 });
 
 export default mongoose.models.File || mongoose.model('File', FileSchema);

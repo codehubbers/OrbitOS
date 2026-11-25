@@ -7,6 +7,7 @@ import UserProfileTooltip from './UserProfileTooltip';
 import UserProfile from './UserProfile';
 import AvatarEditor from './AvatarEditor';
 import WindowGroupManager from '@/system/components/WindowGroupManager';
+import MusicMiniPlayer from './MusicMiniPlayer';
 import { motion } from 'framer-motion';
 
 // --- Style Constants ---
@@ -442,6 +443,7 @@ export default function Taskbar({ onAvatarEdit }) {
         />
       </div>
       <div className="flex items-center space-x-4">
+        <MusicMiniPlayer />
         <div className="relative">
           <motion.button
             onMouseEnter={() => setShowUserTooltip(true)}

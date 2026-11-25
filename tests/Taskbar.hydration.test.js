@@ -36,6 +36,18 @@ jest.mock('../src/context/AuthContext', () => ({
   }),
 }));
 
+// Mock the MusicContext (taskbar mini-player)
+jest.mock('../src/context/MusicContext', () => ({
+  useMusic: () => ({
+    currentTrack: null,
+    isPlaying: false,
+    hasStarted: false,
+    togglePlay: jest.fn(),
+    next: jest.fn(),
+    previous: jest.fn(),
+  }),
+}));
+
 const Taskbar = require('../src/components/Taskbar').default;
 
 describe('Taskbar Hydration Error Fix', () => {
