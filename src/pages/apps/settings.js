@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function SettingsApp() {
   const { theme, currentTheme, switchTheme, themes } = useTheme();
   const { wallpaper, changeWallpaper, availableWallpapers } = useSettings();
+  const { user, refreshUser } = useAuth();
   const [authStatus, setAuthStatus] = useState({
     connected: false,
     loading: true,
@@ -54,6 +56,34 @@ export default function SettingsApp() {
 
   const handleSettingChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // "Play startup sound" preference — off by default, saved per user.
+  const [startupSoundSaving, setStartupSoundSaving] = useState(false);
+  const startupSoundEnabled = user?.preferences?.sound?.startupSound === true;
+
+  const handleStartupSoundToggle = async (enabled) => {
+    setStartupSoundSaving(true);
+    try {
+      const preferences = {
+        ...user?.preferences,
+        sound: { ...user?.preferences?.sound, startupSound: enabled },
+      };
+      const res = await fetch('/api/users/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ preferences }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save the startup sound preference.');
+      }
+      await refreshUser();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setStartupSoundSaving(false);
+    }
   };
 
   return (
@@ -173,6 +203,16 @@ export default function SettingsApp() {
                 onChange={(e) =>
                   handleSettingChange('autoSave', e.target.checked)
                 }
+                className={`w-4 h-4 ${theme.id === 'dark' ? 'accent-blue-500' : ''}`}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="font-medium">Play startup sound</label>
+              <input
+                type="checkbox"
+                checked={startupSoundEnabled}
+                disabled={startupSoundSaving}
+                onChange={(e) => handleStartupSoundToggle(e.target.checked)}
                 className={`w-4 h-4 ${theme.id === 'dark' ? 'accent-blue-500' : ''}`}
               />
             </div>

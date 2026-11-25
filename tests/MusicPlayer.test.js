@@ -30,8 +30,13 @@ describe('Music Player app manifest', () => {
 });
 
 describe('Default playlist', () => {
-  it('ships empty: no bundled (copyrighted) music', () => {
-    expect(DEFAULT_PLAYLIST).toEqual([]);
+  it('ships with only the original CC0 "OrbitOS Theme" (no commercial music)', () => {
+    expect(DEFAULT_PLAYLIST).toHaveLength(1);
+    expect(DEFAULT_PLAYLIST[0]).toMatchObject({
+      id: 'orbitos-theme',
+      title: 'OrbitOS Theme',
+      src: '/sounds/orbitos-startup.mp3',
+    });
   });
 });
 
@@ -89,15 +94,15 @@ describe('isAudioFile', () => {
 describe('MusicProvider playback service', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('does nothing on play while the playlist is empty', () => {
+  it('plays the bundled OrbitOS Theme when toggled (playlist is never empty)', () => {
     render(
       <MusicProvider>
         <PlayerProbe />
       </MusicProvider>,
     );
-    expect(screen.getByTestId('title')).toBeEmptyDOMElement();
+    expect(screen.getByTestId('title')).toHaveTextContent('OrbitOS Theme');
     fireEvent.click(screen.getByText('toggle'));
-    expect(window.HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
   });
 
   it('does not start any music on the first desktop interaction', () => {
@@ -118,10 +123,13 @@ describe('MusicProvider playback service', () => {
       </MusicProvider>,
     );
 
-    fireEvent.click(screen.getByText('add'));
-    expect(screen.getByTestId('title')).toHaveTextContent('My Song');
-    expect(screen.getByTestId('artist')).toHaveTextContent('My Files');
+    // The bundled theme sits at index 0; user files are appended after it.
+    expect(screen.getByTestId('title')).toHaveTextContent('OrbitOS Theme');
+    expect(screen.getByTestId('artist')).toHaveTextContent('Ziqian Huang');
     expect(screen.getByTestId('playing')).toHaveTextContent('false');
+
+    fireEvent.click(screen.getByText('add'));
+    expect(screen.getByTestId('last-track')).toHaveTextContent('My Song');
 
     fireEvent.click(screen.getByText('toggle'));
     expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
@@ -165,14 +173,15 @@ describe('MusicProvider playback service', () => {
       </MusicProvider>,
     );
 
-    expect(screen.getByTestId('playlist-length')).toHaveTextContent('0');
+    // Only the bundled OrbitOS Theme to start with.
+    expect(screen.getByTestId('playlist-length')).toHaveTextContent('1');
 
     fireEvent.click(screen.getByText('add'));
-    expect(screen.getByTestId('playlist-length')).toHaveTextContent('1');
+    expect(screen.getByTestId('playlist-length')).toHaveTextContent('2');
     expect(screen.getByTestId('last-track')).toHaveTextContent('My Song');
 
     // Duplicates are ignored
     fireEvent.click(screen.getByText('add'));
-    expect(screen.getByTestId('playlist-length')).toHaveTextContent('1');
+    expect(screen.getByTestId('playlist-length')).toHaveTextContent('2');
   });
 });
