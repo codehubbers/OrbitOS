@@ -1,0 +1,63 @@
+# Self-hosted OrbitOS: app + MongoDB.
+# The app is published on 127.0.0.1 only; put a reverse proxy or a
+# Cloudflare Tunnel in front of it. MongoDB is never published.
+name: orbitos
+
+services:
+  app:
+    build:
+      context: ..
+    image: orbitos:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/orbitos
+      NODE_ENV: production
+    ports:
+      - '127.0.0.1:${ORBITOS_PORT:-4100}:3000'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1000,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 1g
+    pids_limit: 256
+    networks: [internal, egress]
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    networks: [internal]
+    healthcheck:
+      test:
+        ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+
+networks:
+  # No internet access for MongoDB; the app also joins `egress` so it can
+  # reach Open-Meteo, GitHub, etc.
+  internal:
+    internal: true
+  egress: {}
+
+volumes:
+  mongo-data:
