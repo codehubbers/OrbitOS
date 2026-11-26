@@ -13,10 +13,21 @@ async function dbConnect() {
     return cached.conn;
   }
 
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI is not set');
+  }
+
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI);
   }
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    // Don't cache a failed connection: the next request should try again
+    // instead of failing until the server restarts.
+    cached.promise = null;
+    throw error;
+  }
   return cached.conn;
 }
 

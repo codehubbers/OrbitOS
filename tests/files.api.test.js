@@ -222,3 +222,26 @@ describe('POST /api/files mimeType validation', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 });
+
+describe('GET /api/files error handling', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 503 instead of crashing when the database is unavailable', async () => {
+    const dbConnect = jest.requireMock('@/lib/mongodb').default;
+    dbConnect.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+    const res = createResponse();
+    await filesHandler({ method: 'GET', query: {}, headers: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'File storage is unavailable',
+    });
+  });
+
+  it('returns 401 instead of crashing when not signed in', async () => {
+    const { verifyToken } = jest.requireMock('@/lib/auth');
+    verifyToken.mockRejectedValueOnce(new Error('No token provided'));
+    const res = createResponse();
+    await filesHandler({ method: 'GET', query: {}, headers: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+});

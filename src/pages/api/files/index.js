@@ -15,8 +15,19 @@ export function isValidMimeType(value) {
 }
 
 export default async function handler(req, res) {
-  await dbConnect();
-  const user = await verifyToken(req);
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.error('Files API: database unavailable:', error.message);
+    return res.status(503).json({ error: 'File storage is unavailable' });
+  }
+
+  let user;
+  try {
+    user = await verifyToken(req);
+  } catch (error) {
+    return res.status(401).json({ error: 'Not signed in' });
+  }
 
   if (req.method === 'GET') {
     // List files for the File Manager and Document Picker
