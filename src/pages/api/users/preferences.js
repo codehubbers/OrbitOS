@@ -3,10 +3,17 @@ import { verifyToken } from '../../../lib/auth';
 import User from '../../../models/User';
 
 export default async function handler(req, res) {
-  await dbConnect();
-
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.error('Preferences API: database unavailable:', error.message);
+    return res
+      .status(503)
+      .json({ error: 'Preferences storage is unavailable' });
   }
 
   try {
