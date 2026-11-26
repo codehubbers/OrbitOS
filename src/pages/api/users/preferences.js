@@ -2,8 +2,19 @@ import dbConnect from '../../../lib/mongodb';
 import { verifyToken } from '../../../lib/auth';
 import { isAuthError } from '../../../lib/authErrors';
 import User from '../../../models/User';
+import { body } from 'express-validator';
+import { withValidation } from '../../../middleware/withValidation';
 
-export default async function handler(req, res) {
+const rules = [
+  body('preferences')
+    .custom(
+      (value) =>
+        value !== null && typeof value === 'object' && !Array.isArray(value),
+    )
+    .withMessage('preferences must be an object'),
+];
+
+async function handler(req, res) {
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -41,4 +52,9 @@ export default async function handler(req, res) {
     console.error('Preferences API: save failed:', error.message);
     return res.status(500).json({ error: 'Failed to save preferences' });
   }
+}
+
+const validated = withValidation(rules)(handler);
+export default function preferencesRoute(req, res) {
+  return req.method === 'PUT' ? validated(req, res) : handler(req, res);
 }

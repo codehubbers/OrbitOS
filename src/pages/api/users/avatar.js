@@ -1,8 +1,23 @@
 import dbConnect from '../../../lib/mongodb';
 import { verifyToken } from '../../../lib/auth';
 import User from '../../../models/User';
+import { body } from 'express-validator';
+import { withValidation } from '../../../middleware/withValidation';
 
-export default async function handler(req, res) {
+// Avatars are stored as image data URLs. Reject anything else (for example
+// a javascript: URL or an SVG, which can carry scripts).
+const AVATAR = /^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+/=]+$/i;
+
+const rules = [
+  body('avatar')
+    .isString()
+    .withMessage('Avatar must be text')
+    .bail()
+    .matches(AVATAR)
+    .withMessage('Avatar must be a PNG, JPEG, GIF or WebP image'),
+];
+
+async function handler(req, res) {
   await dbConnect();
 
   if (req.method !== 'PUT') {
@@ -18,12 +33,15 @@ export default async function handler(req, res) {
     }
 
     // Update user avatar
-    const updatedUser = await User.findByIdAndUpdate(user._id, { avatar }, { new: true });
-    console.log('Avatar updated for user:', user._id, 'New avatar length:', avatar.length);
-    console.log('Updated user avatar field:', updatedUser.avatar ? 'Set' : 'Not set');
+    await User.findByIdAndUpdate(user._id, { avatar });
 
     res.json({ message: 'Avatar updated successfully' });
   } catch (error) {
     res.status(401).json({ error: 'Unauthorized' });
   }
+}
+
+const validated = withValidation(rules)(handler);
+export default function avatarRoute(req, res) {
+  return req.method === 'PUT' ? validated(req, res) : handler(req, res);
 }

@@ -3,8 +3,33 @@ import dbConnect from '../../../lib/mongodb';
 import { verifyToken } from '../../../lib/auth';
 import Document from '../../../models/Document';
 import User from '../../../models/User';
+import { body } from 'express-validator';
+import {
+  OBJECT_ID,
+  PERMISSIONS,
+  withValidation,
+} from '../../../middleware/withValidation';
 
-export default async function handler(req, res) {
+const rules = [
+  body('documentId')
+    .isString()
+    .bail()
+    .matches(OBJECT_ID)
+    .withMessage('documentId must be a valid id'),
+  body('userEmail')
+    .isString()
+    .withMessage('userEmail must be text')
+    .bail()
+    .trim()
+    .toLowerCase()
+    .isEmail()
+    .withMessage('Enter a valid email address'),
+  body('permission')
+    .isIn(PERMISSIONS)
+    .withMessage(`permission must be one of: ${PERMISSIONS.join(', ')}`),
+];
+
+async function handler(req, res) {
   await dbConnect();
 
   if (req.method !== 'POST') {
@@ -17,11 +42,9 @@ export default async function handler(req, res) {
 
     // Validate required fields
     if (!documentId || !userEmail || !permission) {
-      return res
-        .status(400)
-        .json({
-          error: 'Missing required fields: documentId, userEmail, permission',
-        });
+      return res.status(400).json({
+        error: 'Missing required fields: documentId, userEmail, permission',
+      });
     }
 
     // Find the document and verify ownership
@@ -69,4 +92,10 @@ export default async function handler(req, res) {
     console.error('Document share error:', error);
     res.status(500).json({ error: 'Server error during sharing' });
   }
+}
+
+// Only validate POST bodies; other methods still get the handler's 405.
+const validated = withValidation(rules)(handler);
+export default function shareRoute(req, res) {
+  return req.method === 'POST' ? validated(req, res) : handler(req, res);
 }
