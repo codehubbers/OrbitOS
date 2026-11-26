@@ -5,6 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import useStartupSound from '@/hooks/useStartupSound';
 
 import AppIcon from './AppIcon';
 import Window from './Window';
@@ -106,6 +107,8 @@ export default function Desktop() {
   const { theme } = useTheme();
   const { wallpaper } = useSettings();
   const { user, refreshUser } = useAuth();
+  // Plays the startup sound once per session when enabled in Settings.
+  useStartupSound();
   const [appPositions, setAppPositions] = useState({});
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
 

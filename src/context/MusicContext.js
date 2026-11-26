@@ -10,11 +10,20 @@ import {
 } from 'react';
 
 /**
- * The player starts with an empty playlist: OrbitOS does not bundle any
- * music (we can't redistribute copyrighted recordings), so users add
- * tracks from their own files.
+ * The player ships with a single bundled track: the "OrbitOS Theme", an
+ * original composition released under CC0 (see public/sounds/LICENSE.md).
+ * No commercial recordings are bundled (we can't redistribute copyrighted
+ * music) — users add their own tracks from their files.
  */
-export const DEFAULT_PLAYLIST = [];
+export const DEFAULT_PLAYLIST = [
+  {
+    id: 'orbitos-theme',
+    title: 'OrbitOS Theme',
+    artist: 'Ziqian Huang',
+    album: 'OrbitOS Sounds',
+    src: '/sounds/orbitos-startup.mp3',
+  },
+];
 
 /** Largest audio file the player will upload (stored base64 in MongoDB). */
 export const MAX_AUDIO_UPLOAD_BYTES = 8 * 1024 * 1024;
