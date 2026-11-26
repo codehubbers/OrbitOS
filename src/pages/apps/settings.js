@@ -60,10 +60,12 @@ export default function SettingsApp() {
 
   // "Play startup sound" preference — off by default, saved per user.
   const [startupSoundSaving, setStartupSoundSaving] = useState(false);
+  const [startupSoundError, setStartupSoundError] = useState('');
   const startupSoundEnabled = user?.preferences?.sound?.startupSound === true;
 
   const handleStartupSoundToggle = async (enabled) => {
     setStartupSoundSaving(true);
+    setStartupSoundError('');
     try {
       const preferences = {
         ...user?.preferences,
@@ -81,6 +83,7 @@ export default function SettingsApp() {
       await refreshUser();
     } catch (error) {
       console.error(error);
+      setStartupSoundError("Couldn't save this setting. Please try again.");
     } finally {
       setStartupSoundSaving(false);
     }
@@ -216,6 +219,11 @@ export default function SettingsApp() {
                 className={`w-4 h-4 ${theme.id === 'dark' ? 'accent-blue-500' : ''}`}
               />
             </div>
+            {startupSoundError && (
+              <p role="alert" className="text-sm text-red-500">
+                {startupSoundError}
+              </p>
+            )}
           </div>
         </div>
 

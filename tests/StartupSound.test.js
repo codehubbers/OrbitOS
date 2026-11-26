@@ -83,5 +83,11 @@ describe('useStartupSound', () => {
     await waitFor(() =>
       expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2),
     );
+
+    // The first gesture removes BOTH listeners — a later key press must
+    // not restart the sound.
+    fireEvent.keyDown(window, { key: 'a' });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
   });
 });

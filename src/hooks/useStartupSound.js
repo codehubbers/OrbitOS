@@ -40,9 +40,15 @@ export default function useStartupSound() {
 
     audio.play().catch(() => {
       // Autoplay restrictions: retry once on the next user gesture.
-      const retry = () => audio.play().catch(() => {});
-      window.addEventListener('pointerdown', retry, { once: true });
-      window.addEventListener('keydown', retry, { once: true });
+      // Whichever gesture fires first removes BOTH listeners, so the
+      // sound can never be restarted by a later stray key press.
+      const retry = () => {
+        window.removeEventListener('pointerdown', retry);
+        window.removeEventListener('keydown', retry);
+        audio.play().catch(() => {});
+      };
+      window.addEventListener('pointerdown', retry);
+      window.addEventListener('keydown', retry);
     });
   }, [isLoading, isAuthenticated, user]);
 }
