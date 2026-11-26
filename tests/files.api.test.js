@@ -4,6 +4,7 @@ import fileHandler, {
 } from '@/pages/api/files/[id]';
 import filesHandler, { isValidMimeType } from '@/pages/api/files/index';
 import File from '@/models/File';
+import { AuthError } from '@/lib/authErrors';
 
 jest.mock('@/lib/mongodb', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@/lib/auth', () => ({
@@ -220,5 +221,38 @@ describe('POST /api/files mimeType validation', () => {
       res,
     );
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+});
+
+describe('GET /api/files error handling', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 503 instead of crashing when the database is unavailable', async () => {
+    const dbConnect = jest.requireMock('@/lib/mongodb').default;
+    dbConnect.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = createResponse();
+    await filesHandler({ method: 'GET', query: {}, headers: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'File storage is unavailable',
+    });
+  });
+
+  it('returns 401 instead of crashing when not signed in', async () => {
+    const { verifyToken } = jest.requireMock('@/lib/auth');
+    verifyToken.mockRejectedValueOnce(new AuthError('No token provided'));
+    const res = createResponse();
+    await filesHandler({ method: 'GET', query: {}, headers: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('returns 500, not 401, when verifying the session hits a DB error', async () => {
+    const { verifyToken } = jest.requireMock('@/lib/auth');
+    verifyToken.mockRejectedValueOnce(new Error('MongoNetworkError'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const res = createResponse();
+    await filesHandler({ method: 'GET', query: {}, headers: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 });

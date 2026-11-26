@@ -5,7 +5,15 @@ import { useTheme } from '@/context/ThemeContext';
 import { useDrive } from '@/context/DriveContext';
 import { useAuth } from '@/context/AuthContext';
 
-const FileItem = ({ item, source, theme, onDownload, onShare, onDelete, currentUserId }) => {
+const FileItem = ({
+  item,
+  source,
+  theme,
+  onDownload,
+  onShare,
+  onDelete,
+  currentUserId,
+}) => {
   const isGdrive = source === 'gdrive';
   const icon = isGdrive ? (
     <img src={item.iconLink} alt="" className="w-5 h-5" />
@@ -68,8 +76,8 @@ const FileItem = ({ item, source, theme, onDownload, onShare, onDelete, currentU
               <button
                 onClick={() => onDelete(fileId, item.name, isOwner)} // Also fixed delete
                 className={`px-2 py-1 text-sm rounded ${
-                  isOwner 
-                    ? 'bg-red-500 hover:bg-red-600 text-white' 
+                  isOwner
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
                     : 'bg-orange-500 hover:bg-orange-600 text-white'
                 }`}
                 title={isOwner ? 'Delete File' : 'Unshare File'}
@@ -122,14 +130,27 @@ export default function FileManagerApp() {
 
   const fetchLocalItems = async () => {
     setIsLoadingLocal(true);
+    setError(null);
     try {
       const res = await fetch('/api/files');
-      if (!res.ok) throw new Error('Fetch failed');
+      if (!res.ok) {
+        // Expected states (signed out, no database in local dev): show a
+        // message instead of throwing, which Next.js dev turns into an overlay.
+        setError(
+          res.status === 401
+            ? 'Sign in to see your files.'
+            : res.status === 503
+              ? "File storage isn't available right now. If you're running OrbitOS locally, check MONGODB_URI."
+              : `Couldn't load your files (error ${res.status}).`,
+        );
+        setLocalItems([]);
+        return;
+      }
       const data = await res.json();
       setLocalItems(data.files || []);
     } catch (error) {
-      console.error('Failed to load files:', error);
-      setError('Failed to load files from server.');
+      console.warn('Failed to load files:', error);
+      setError("Couldn't reach the server to load your files.");
       setLocalItems([]);
     } finally {
       setIsLoadingLocal(false);
@@ -168,25 +189,25 @@ export default function FileManagerApp() {
     try {
       // Use the same method as Notes app - fetch from /api/files
       const response = await fetch('/api/files');
-      
+
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const files = data.files || [];
-      const file = files.find(f => f.name === filename);
-      
+      const file = files.find((f) => f.name === filename);
+
       if (!file) {
         throw new Error(`File "${filename}" not found`);
       }
-      
+
       const content = file.content || '';
-      
+
       // Create download
       const blob = new Blob([content], { type: 'text/plain' });
       const downloadUrl = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = filename;
@@ -194,7 +215,7 @@ export default function FileManagerApp() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(downloadUrl);
-      
+
       showNotification(`Downloaded "${filename}" successfully`, 'success');
     } catch (error) {
       console.error('Download failed:', error);
@@ -225,9 +246,13 @@ export default function FileManagerApp() {
       showNotification(error.message, 'error');
     }
   };
-  
+
   const handleDelete = async (fileId, filename, isOwner) => {
-    if (!confirm(`Are you sure you want to ${isOwner ? 'delete' : 'unshare'} "${filename}"?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to ${isOwner ? 'delete' : 'unshare'} "${filename}"?`,
+      )
+    ) {
       return;
     }
 
@@ -241,13 +266,17 @@ export default function FileManagerApp() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${isOwner ? 'delete' : 'unshare'} file`);
+        throw new Error(
+          errorData.error || `Failed to ${isOwner ? 'delete' : 'unshare'} file`,
+        );
       }
 
       const result = await response.json();
-      
-      setLocalItems(prev => prev.filter(item => (item.id !== fileId && item._id !== fileId)));
-      
+
+      setLocalItems((prev) =>
+        prev.filter((item) => item.id !== fileId && item._id !== fileId),
+      );
+
       showNotification(result.message, 'success');
       await fetchLocalItems();
     } catch (error) {

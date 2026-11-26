@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import { AuthError } from './authErrors';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'orbitos-secret-key';
 const LOCAL_ADMIN_ID = '000000000000000000000000';
@@ -98,20 +99,22 @@ export const hasLocalAdminSession = (req) => {
 export const verifyToken = async (req) => {
   const token = getRequestToken(req);
   if (!token) {
-    throw new Error('No token provided');
+    throw new AuthError('No token provided');
   }
 
   const decoded = jwt.verify(token, JWT_SECRET);
   if (decoded.localAdmin === true) {
     if (!isLocalAdminRequest(req) || !hasLocalAdminClaims(decoded)) {
-      throw new Error('Local admin sessions are only available on localhost');
+      throw new AuthError(
+        'Local admin sessions are only available on localhost',
+      );
     }
     return getLocalAdminUser();
   }
 
   const user = await User.findById(decoded.userId).select('-passwordHash');
   if (!user || !user.isActive) {
-    throw new Error('Invalid token or user not found');
+    throw new AuthError('Invalid token or user not found');
   }
 
   return user;

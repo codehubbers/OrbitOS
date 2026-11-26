@@ -13,10 +13,25 @@ async function dbConnect() {
     return cached.conn;
   }
 
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI);
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI is not set');
   }
-  cached.conn = await cached.promise;
+
+  if (!cached.promise) {
+    // Fail fast when the database is unreachable (mongoose waits ~30s by
+    // default), so the API can answer 503 quickly.
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+  }
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    // Don't cache a failed connection: the next request should try again
+    // instead of failing until the server restarts.
+    cached.promise = null;
+    throw error;
+  }
   return cached.conn;
 }
 
