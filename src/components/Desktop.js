@@ -6,12 +6,14 @@ import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import useStartupSound from '@/hooks/useStartupSound';
+import useLockScreen from '@/hooks/useLockScreen';
 
 import AppIcon from './AppIcon';
 import Window from './Window';
 import EnhancedWindow from './EnhancedWindow';
 import Taskbar from './Taskbar';
 import AvatarEditor from './AvatarEditor';
+import LockScreen from './LockScreen';
 import TopBarService from '@/system/services/TopBarService';
 import TopBarDropdownService from '@/system/services/TopBarDropdownService';
 import TopBarInfoAboutService from '@/system/services/TopBarInfoAboutService';
@@ -109,6 +111,9 @@ export default function Desktop() {
   const { user, refreshUser } = useAuth();
   // Plays the startup sound once per session when enabled in Settings.
   useStartupSound();
+  // Lock screen (#98): Ctrl+Alt+L locks; unlocking checks the password on
+  // the server. Windows stay mounted (inert) underneath.
+  const { locked, unlock } = useLockScreen({ enabled: Boolean(user) });
   const [appPositions, setAppPositions] = useState({});
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
 
@@ -432,68 +437,76 @@ export default function Desktop() {
   };
 
   return (
-    <div
-      className={`h-screen w-screen relative overflow-hidden ${theme.desktop}`}
-      style={{
-        backgroundImage: `url(${wallpaper})`,
-        backgroundSize: '100% 100%', // Ensures the whole image rendered
-        backgroundPosition: 'center', // Centers the image
-        backgroundRepeat: 'no-repeat', // Prevents the image from tiling
-      }}
-    >
-      {/* Desktop App Icons */}
-      {desktopApps.map((app, index) => (
-        <AppIcon
-          key={app.id}
-          app={app}
-          position={getAppPosition(app, index)}
-          onPositionChange={handlePositionChange}
-          allApps={desktopApps.map((a, i) => ({
-            ...a,
-            position: getAppPosition(a, i),
-          }))}
-        />
-      ))}
+    <>
+      <div
+        // React 18 has no boolean support for inert: '' turns it on.
+        inert={locked ? '' : undefined}
+        aria-hidden={locked || undefined}
+        className={`h-screen w-screen relative overflow-hidden ${theme.desktop}`}
+        style={{
+          backgroundImage: `url(${wallpaper})`,
+          backgroundSize: '100% 100%', // Ensures the whole image rendered
+          backgroundPosition: 'center', // Centers the image
+          backgroundRepeat: 'no-repeat', // Prevents the image from tiling
+        }}
+      >
+        {/* Desktop App Icons */}
+        {desktopApps.map((app, index) => (
+          <AppIcon
+            key={app.id}
+            app={app}
+            position={getAppPosition(app, index)}
+            onPositionChange={handlePositionChange}
+            allApps={desktopApps.map((a, i) => ({
+              ...a,
+              position: getAppPosition(a, i),
+            }))}
+          />
+        ))}
 
-      {/* Desktop Widgets */}
-      <WeatherWidget />
+        {/* Desktop Widgets */}
+        <WeatherWidget />
 
-      {/* Open Application Windows */}
-      {state.openApps.map((app) => renderWindow(app))}
+        {/* Open Application Windows */}
+        {state.openApps.map((app) => renderWindow(app))}
 
-      {/* Taskbar */}
-      <Taskbar onAvatarEdit={() => setShowAvatarEditor(true)} />
+        {/* Taskbar */}
+        <Taskbar onAvatarEdit={() => setShowAvatarEditor(true)} />
 
-      {/* Avatar Editor */}
-      {showAvatarEditor && (
-        <AvatarEditor
-          currentAvatar={user?.avatar}
-          onSave={async (avatarData) => {
-            try {
-              const response = await fetch('/api/users/avatar', {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ avatar: avatarData }),
-              });
+        {/* Avatar Editor */}
+        {showAvatarEditor && (
+          <AvatarEditor
+            currentAvatar={user?.avatar}
+            onSave={async (avatarData) => {
+              try {
+                const response = await fetch('/api/users/avatar', {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ avatar: avatarData }),
+                });
 
-              if (!response.ok) {
-                throw new Error('Failed to save avatar');
+                if (!response.ok) {
+                  throw new Error('Failed to save avatar');
+                }
+
+                console.log('Avatar saved successfully, refreshing user...');
+                setShowAvatarEditor(false);
+                // Refresh user data to show new avatar
+                await refreshUser();
+                console.log('User refreshed, new avatar should appear');
+              } catch (error) {
+                throw error; // Let AvatarEditor handle the error
               }
-
-              console.log('Avatar saved successfully, refreshing user...');
-              setShowAvatarEditor(false);
-              // Refresh user data to show new avatar
-              await refreshUser();
-              console.log('User refreshed, new avatar should appear');
-            } catch (error) {
-              throw error; // Let AvatarEditor handle the error
-            }
-          }}
-          onClose={() => setShowAvatarEditor(false)}
-        />
+            }}
+            onClose={() => setShowAvatarEditor(false)}
+          />
+        )}
+      </div>
+      {locked && (
+        <LockScreen user={user} wallpaper={wallpaper} onUnlock={unlock} />
       )}
-    </div>
+    </>
   );
 }
