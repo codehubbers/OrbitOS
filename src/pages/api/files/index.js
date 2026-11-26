@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/mongodb';
 import { verifyToken } from '../../../lib/auth';
 import { isAuthError } from '../../../lib/authErrors';
+import { OBJECT_ID } from '../../../middleware/withValidation';
 import File from '../../../models/File'; // You'll need to create this model
 
 // Audio is uploaded as a base64 data URL; an 8 MB file is ~10.7 MB encoded.
@@ -63,6 +64,14 @@ export default async function handler(req, res) {
       const { id, name, content, mimeType } = req.body;
       if (mimeType !== undefined && !isValidMimeType(mimeType)) {
         return res.status(400).json({ error: 'Invalid mimeType' });
+      }
+      // An id means "update this file": it must be a real ObjectId string,
+      // never an object like {"$ne": null} that would match any file.
+      if (id && !(typeof id === 'string' && OBJECT_ID.test(id))) {
+        return res.status(400).json({ error: 'Invalid file id' });
+      }
+      if (typeof name !== 'string' && !id) {
+        return res.status(400).json({ error: 'File name is required' });
       }
 
       if (id) {
