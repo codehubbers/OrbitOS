@@ -35,7 +35,9 @@ export default function useWeather() {
         body: JSON.stringify({ preferences }),
       });
       if (!response.ok) {
-        throw new Error('Your weather preference could not be saved.');
+        throw new Error(
+          'Your weather preference could not be saved. It will reset on reload.',
+        );
       }
       await refreshUser();
     },
@@ -162,10 +164,9 @@ export default function useWeather() {
 
   const changeUnit = (nextUnit) => {
     if (nextUnit === unit) return;
-    const previousUnit = unit;
     setUnit(nextUnit);
+    // Keep the chosen unit even if saving fails — only show the error.
     saveWeatherPreferences({ unit: nextUnit }).catch((preferenceError) => {
-      setUnit(previousUnit);
       setError(preferenceError.message);
     });
   };

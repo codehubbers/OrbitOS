@@ -135,4 +135,67 @@ describe('Weather app', () => {
       });
     });
   });
+
+  it('keeps the chosen unit when saving the preference fails', async () => {
+    global.fetch = jest.fn((url) => {
+      if (url === '/api/users/preferences') {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          json: () => Promise.resolve({ error: 'Database error' }),
+        });
+      }
+      if (url.startsWith('/api/weather?city=')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              results: [
+                {
+                  id: 1,
+                  name: 'London',
+                  latitude: 51.5072,
+                  longitude: -0.1276,
+                  country: 'United Kingdom',
+                },
+              ],
+            }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(forecast),
+      });
+    });
+
+    render(<Weather />);
+
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search for a city' }),
+      {
+        target: { value: 'London' },
+      },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /London.*United Kingdom/ }),
+    );
+
+    expect(await screen.findByText('20°C')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '°F' }));
+
+    // The save fails, but the unit must not roll back to °C…
+    expect(await screen.findByText('68°F')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Your weather preference could not be saved. It will reset on reload.',
+      );
+    });
+    expect(screen.getByText('68°F')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '°F' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
 });
