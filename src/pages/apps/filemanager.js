@@ -130,6 +130,7 @@ export default function FileManagerApp() {
 
   const fetchLocalItems = async () => {
     setIsLoadingLocal(true);
+    setError(null);
     try {
       const res = await fetch('/api/files');
       if (!res.ok) {

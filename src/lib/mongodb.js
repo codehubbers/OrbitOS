@@ -18,7 +18,11 @@ async function dbConnect() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI);
+    // Fail fast when the database is unreachable (mongoose waits ~30s by
+    // default), so the API can answer 503 quickly.
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
   }
   try {
     cached.conn = await cached.promise;

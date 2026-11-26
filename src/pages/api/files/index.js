@@ -1,5 +1,6 @@
 import dbConnect from '../../../lib/mongodb';
 import { verifyToken } from '../../../lib/auth';
+import { isAuthError } from '../../../lib/authErrors';
 import File from '../../../models/File'; // You'll need to create this model
 
 // Audio is uploaded as a base64 data URL; an 8 MB file is ~10.7 MB encoded.
@@ -26,7 +27,11 @@ export default async function handler(req, res) {
   try {
     user = await verifyToken(req);
   } catch (error) {
-    return res.status(401).json({ error: 'Not signed in' });
+    if (isAuthError(error)) {
+      return res.status(401).json({ error: 'Not signed in' });
+    }
+    console.error('Files API: could not verify session:', error.message);
+    return res.status(500).json({ error: 'Failed to verify session' });
   }
 
   if (req.method === 'GET') {
