@@ -18,16 +18,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // The local dev admin has no stored password and no database record
+  // (localhost + NEXT_PUBLIC_ENABLE_LOCAL_ADMIN only), so unlock it without
+  // touching the database — and without requiring a password at all.
+  if (hasLocalAdminSession(req)) {
+    return res.json({ ok: true });
+  }
+
   const { password } = req.body || {};
   if (typeof password !== 'string' || !password || password.length > 128) {
     return res.status(400).json({ error: 'Password is required' });
-  }
-
-  // The local dev admin has no stored password and no database record
-  // (localhost + NEXT_PUBLIC_ENABLE_LOCAL_ADMIN only), so unlock it without
-  // touching the database.
-  if (hasLocalAdminSession(req)) {
-    return res.json({ ok: true });
   }
 
   try {

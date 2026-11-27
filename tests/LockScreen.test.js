@@ -97,6 +97,15 @@ describe('POST /api/auth/verify-password', () => {
     expect(dbConnect).not.toHaveBeenCalled();
   });
 
+  it('unlocks the local dev admin with no password at all', async () => {
+    const { hasLocalAdminSession } = jest.requireMock('@/lib/auth');
+    hasLocalAdminSession.mockReturnValueOnce(true);
+    const res = response();
+    await verifyPassword(post({}), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+  });
+
   it('only accepts POST', async () => {
     const res = response();
     await verifyPassword({ method: 'GET', headers: {} }, res);
@@ -150,6 +159,28 @@ describe('LockScreen', () => {
       'Wrong password. Try again.',
     );
     expect(onUnlock).not.toHaveBeenCalled();
+  });
+
+  it('lets the local dev admin unlock with Enter and no password field', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    const onUnlock = jest.fn();
+    const localAdmin = {
+      _id: '000000000000000000000000',
+      username: 'local-admin',
+      displayName: 'Local Admin',
+    };
+    render(<LockScreen user={localAdmin} onUnlock={onUnlock} />);
+
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Unlock' });
+    expect(button).toHaveFocus();
+    fireEvent.click(button);
+
+    await waitFor(() => expect(onUnlock).toHaveBeenCalled());
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/auth/verify-password',
+      expect.objectContaining({ body: JSON.stringify({}) }),
+    );
   });
 });
 
