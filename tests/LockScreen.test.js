@@ -156,16 +156,29 @@ describe('LockScreen', () => {
 describe('useLockScreen', () => {
   beforeEach(() => window.sessionStorage.clear());
 
-  it('recognises Ctrl+Alt+L only', () => {
+  it('recognises Ctrl+Alt+L and the Mac alias Cmd+Ctrl+L', () => {
     expect(isLockShortcut({ ctrlKey: true, altKey: true, key: 'l' })).toBe(
+      true,
+    );
+    expect(isLockShortcut({ ctrlKey: true, metaKey: true, key: 'l' })).toBe(
       true,
     );
     expect(isLockShortcut({ ctrlKey: true, altKey: false, key: 'l' })).toBe(
       false,
     );
+    expect(isLockShortcut({ metaKey: true, key: 'l' })).toBe(false);
     expect(
       isLockShortcut({ ctrlKey: true, altKey: true, shiftKey: true, key: 'L' }),
     ).toBe(false);
+  });
+
+  it('works when macOS turns Option+L into "¬" (falls back to key code)', () => {
+    expect(
+      isLockShortcut({ ctrlKey: true, altKey: true, key: '¬', code: 'KeyL' }),
+    ).toBe(true);
+    expect(
+      isLockShortcut({ ctrlKey: true, metaKey: true, key: '¬', code: 'KeyL' }),
+    ).toBe(true);
   });
 
   it('locks on the shortcut and survives a reload', () => {

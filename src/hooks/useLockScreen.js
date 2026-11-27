@@ -1,7 +1,8 @@
 // Lock screen state (#98).
 //
 // - lock() / unlock()
-// - Ctrl+Alt+L locks (browsers can't see Win+L: the OS handles it first)
+// - Ctrl+Alt+L locks (Cmd+Ctrl+L on Mac; browsers can't see Win+L: the
+//   OS handles it first)
 // - The locked state is kept in sessionStorage, so reloading the tab
 //   doesn't skip the lock screen.
 // - Idle timeout: lock after `idleMinutes` without mouse/keyboard/touch
@@ -37,12 +38,18 @@ const writeLocked = (locked) => {
   }
 };
 
+// Ctrl+Alt+L on Windows/Linux; on a Mac keyboard Alt is Option, which is
+// awkward to reach, so Cmd+Ctrl+L works there too. (Cmd+L alone is the
+// browser's address bar, so the modifier pair is required.)
+// Note: on macOS, Option+L types "¬", so event.key is unreliable for this
+// combo — fall back to the physical key code.
 export const isLockShortcut = (event) =>
-  event.ctrlKey &&
-  event.altKey &&
-  !event.shiftKey &&
-  !event.metaKey &&
-  event.key?.toLowerCase() === 'l';
+  Boolean(
+    event.ctrlKey &&
+      (event.altKey || event.metaKey) &&
+      !event.shiftKey &&
+      (event.key?.toLowerCase() === 'l' || event.code === 'KeyL'),
+  );
 
 export default function useLockScreen({
   enabled = true,
