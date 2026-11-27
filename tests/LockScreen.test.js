@@ -194,3 +194,57 @@ describe('useLockScreen', () => {
     expect(result.current.locked).toBe(false);
   });
 });
+
+describe('useLockScreen idle timeout', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    window.sessionStorage.clear();
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it('locks after the configured idle time (default 10 min)', () => {
+    const { result } = renderHook(() => useLockScreen());
+    act(() => jest.advanceTimersByTime(10 * 60 * 1000 - 1000));
+    expect(result.current.locked).toBe(false);
+    act(() => jest.advanceTimersByTime(1000));
+    expect(result.current.locked).toBe(true);
+  });
+
+  it('activity resets the countdown', () => {
+    const { result } = renderHook(() => useLockScreen({ idleMinutes: 10 }));
+
+    act(() => jest.advanceTimersByTime(9 * 60 * 1000));
+    // 9 minutes in, the user moves the mouse — the countdown starts over.
+    // (The listener is throttled at 5s, and 9 minutes clears that easily.)
+    act(() => {
+      fireEvent.pointerDown(window);
+      jest.advanceTimersByTime(9 * 60 * 1000);
+    });
+    expect(result.current.locked).toBe(false);
+
+    act(() => jest.advanceTimersByTime(60 * 1000));
+    expect(result.current.locked).toBe(true);
+  });
+
+  it('never locks when idleMinutes is 0 ("Never" in Settings)', () => {
+    const { result } = renderHook(() => useLockScreen({ idleMinutes: 0 }));
+    act(() => jest.advanceTimersByTime(2 * 60 * 60 * 1000));
+    expect(result.current.locked).toBe(false);
+  });
+
+  it('stays idle (no double lock) while the screen is already locked', () => {
+    const { result } = renderHook(() => useLockScreen({ idleMinutes: 10 }));
+    act(() => result.current.lock());
+    // Time passes while locked; unlocking afterwards must not instantly
+    // re-lock from a stale timer.
+    act(() => jest.advanceTimersByTime(30 * 60 * 1000));
+    act(() => result.current.unlock());
+    expect(result.current.locked).toBe(false);
+    // The fresh countdown starts after the unlock.
+    act(() => jest.advanceTimersByTime(10 * 60 * 1000 - 1000));
+    expect(result.current.locked).toBe(false);
+    act(() => jest.advanceTimersByTime(1000));
+    expect(result.current.locked).toBe(true);
+  });
+});

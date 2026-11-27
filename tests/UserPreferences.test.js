@@ -40,4 +40,14 @@ describe('User preferences schema', () => {
       },
     });
   });
+
+  // Same strict-mode lesson as sound.startupSound (#132): without this,
+  // the "Lock after inactivity" setting could never persist.
+  it('declares preferences.security.lockAfterMinutes, defaulting to 10', () => {
+    expect(capturedSchema.preferences).toMatchObject({
+      security: {
+        lockAfterMinutes: { type: Number, default: 10 },
+      },
+    });
+  });
 });

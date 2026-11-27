@@ -112,8 +112,12 @@ export default function Desktop() {
   // Plays the startup sound once per session when enabled in Settings.
   useStartupSound();
   // Lock screen (#98): Ctrl+Alt+L locks; unlocking checks the password on
-  // the server. Windows stay mounted (inert) underneath.
-  const { locked, unlock } = useLockScreen({ enabled: Boolean(user) });
+  // the server. Windows stay mounted (inert) underneath. Idle timeout from
+  // Settings → Security (defaults to 10 min when the preference is unset).
+  const { locked, unlock } = useLockScreen({
+    enabled: Boolean(user),
+    idleMinutes: user?.preferences?.security?.lockAfterMinutes,
+  });
   const [appPositions, setAppPositions] = useState({});
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
 
