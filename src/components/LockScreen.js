@@ -51,11 +51,13 @@ export default function LockScreen({ user, wallpaper, onUnlock }) {
         return;
       }
       const data = await response.json().catch(() => ({}));
-      setError(
-        response.status === 401
-          ? 'Wrong password. Try again.'
-          : data.error || "Couldn't unlock. Try again.",
-      );
+      if (response.status === 401) {
+        setError('Wrong password. Try again.');
+      } else if (response.status === 429) {
+        setError('Too many attempts. Please wait and try again.');
+      } else {
+        setError(data.error || "Couldn't unlock. Try again.");
+      }
     } catch {
       setError("Couldn't reach the server. Check your connection.");
     } finally {
