@@ -8,7 +8,7 @@ import {
   loadCalculatorHistory,
   MAX_CALCULATOR_HISTORY,
   saveCalculatorHistory,
-} from './calculatorUtils';
+} from '../../lib/calculatorUtils';
 
 const MEMORY_ACTIONS = ['MC', 'MR', 'M+', 'M−'];
 

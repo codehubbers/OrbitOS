@@ -5,7 +5,7 @@ import {
   formatCalculatorResult,
   loadCalculatorHistory,
   saveCalculatorHistory,
-} from '../calculatorUtils';
+} from '../src/lib/calculatorUtils';
 
 describe('evaluateExpression', () => {
   test('evaluates addition and subtraction', () => {
