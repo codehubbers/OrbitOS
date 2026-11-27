@@ -1,10 +1,14 @@
 // Tests for #104: rate limiting, input validation and cookie hardening.
-import loginHandler, { LOGIN_LIMIT } from '@/pages/api/auth/login';
+import loginHandler, {
+  LOGIN_IP_LIMIT,
+  LOGIN_LIMIT,
+} from '@/pages/api/auth/login';
 import registerHandler, { REGISTER_LIMIT } from '@/pages/api/auth/register';
 import checkUsernameHandler from '@/pages/api/auth/check-username/[username]';
 import documentShareHandler from '@/pages/api/documents/share';
 import avatarHandler from '@/pages/api/users/avatar';
 import {
+  clientKey,
   createMemoryStore,
   getClientIp,
   withRateLimit,
@@ -137,6 +141,58 @@ describe('login rate limit', () => {
       const res = await call(loginHandler, request({ body, ip }));
       expect(res.statusCode).toBe(401);
     }
+  });
+
+  it('caps failed logins per IP across different emails', async () => {
+    User.findOne.mockResolvedValue(null);
+    const ip = freshIp();
+    for (let i = 0; i < LOGIN_IP_LIMIT.max; i++) {
+      const res = await call(
+        loginHandler,
+        request({ body: { email: `u${i}@example.com`, password: 'x' }, ip }),
+      );
+      expect(res.statusCode).toBe(401);
+    }
+    const res = await call(
+      loginHandler,
+      request({ body: { email: 'fresh@example.com', password: 'x' }, ip }),
+    );
+    expect(res.statusCode).toBe(429);
+    expect(User.findOne).toHaveBeenCalledTimes(LOGIN_IP_LIMIT.max);
+  });
+
+  it('does not count successful logins toward the per-IP cap', async () => {
+    const user = {
+      _id: 'u1',
+      email: 'me@example.com',
+      comparePassword: jest.fn().mockResolvedValue(true),
+      save: jest.fn(),
+    };
+    User.findOne.mockResolvedValue(user);
+    const ip = freshIp();
+    for (let i = 0; i <= LOGIN_IP_LIMIT.max; i++) {
+      const res = await call(
+        loginHandler,
+        request({ body: { email: 'me@example.com', password: 'pw' }, ip }),
+      );
+      expect(res.statusCode).toBe(200);
+    }
+  });
+
+  it('treats a whole IPv6 /64 as one client', async () => {
+    User.findOne.mockResolvedValue(null);
+    const body = { email: 'victim@example.com', password: 'wrong' };
+    for (let i = 0; i < LOGIN_LIMIT.max; i++) {
+      await call(
+        loginHandler,
+        request({ body, ip: `2001:db8:1:2::${(i + 1).toString(16)}` }),
+      );
+    }
+    const res = await call(
+      loginHandler,
+      request({ body, ip: '2001:db8:1:2:ffff:ffff:ffff:ffff' }),
+    );
+    expect(res.statusCode).toBe(429);
   });
 });
 
@@ -311,7 +367,31 @@ describe('getClientIp', () => {
   });
 });
 
+describe('clientKey', () => {
+  const key = (ip) => clientKey({ socket: { remoteAddress: ip }, headers: {} });
+
+  it('keeps IPv4 addresses as they are', () => {
+    expect(key('203.0.113.7')).toBe('203.0.113.7');
+    expect(key('::ffff:203.0.113.7')).toBe('203.0.113.7');
+  });
+
+  it('cuts IPv6 addresses to their /64', () => {
+    expect(key('2001:db8:0:1::5')).toBe('2001:db8:0:1::/64');
+    expect(key('2001:0db8:0000:0001:aaaa:bbbb:cccc:dddd')).toBe(
+      '2001:db8:0:1::/64',
+    );
+    expect(key('2001:db8::1')).toBe('2001:db8:0:0::/64');
+    expect(key('fe80::1%eth0')).toBe('fe80:0:0:0::/64');
+  });
+});
+
 describe('withRateLimit', () => {
+  it('keeps the store bounded under a flood of unique keys', () => {
+    const store = createMemoryStore({ maxKeys: 100 });
+    for (let i = 0; i < 1000; i++) store.increment(`k${i}`, 60 * 1000);
+    expect(store.size()).toBe(100);
+  });
+
   it('opens a new window once the old one expires', async () => {
     let now = 0;
     const store = createMemoryStore({ now: () => now });

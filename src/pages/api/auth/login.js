@@ -3,10 +3,13 @@ import dbConnect from '../../../lib/mongodb';
 import User from '../../../models/User';
 import { generateToken } from '../../../lib/auth';
 import { authCookie } from '../../../lib/cookies';
-import { getClientIp, withRateLimit } from '../../../middleware/withRateLimit';
+import { clientKey, withRateLimit } from '../../../middleware/withRateLimit';
 import { withValidation } from '../../../middleware/withValidation';
 
 export const LOGIN_LIMIT = { windowMs: 15 * 60 * 1000, max: 5 };
+// Failed logins per IP across all emails, so one client can't spray
+// passwords over many accounts (5 tries each would otherwise be unlimited).
+export const LOGIN_IP_LIMIT = { windowMs: 15 * 60 * 1000, max: 20 };
 
 const rules = [
   body('email')
@@ -77,17 +80,31 @@ async function handler(req, res) {
 
 const loginKey = (req) => {
   const email = req.body?.email;
+  // Validation runs after the limiter, so cap the length here: an oversized
+  // value shares one bucket instead of making the key arbitrarily large.
   const normalized =
-    typeof email === 'string' ? email.trim().toLowerCase() : '';
-  return `${getClientIp(req)}|${normalized}`;
+    typeof email === 'string' && email.length <= 254
+      ? email.trim().toLowerCase()
+      : '';
+  return `${clientKey(req)}|${normalized}`;
 };
 
-// Rate limit first (per IP + email; a successful login clears the bucket,
-// so only failed attempts count), then validate, then the handler.
-export default withRateLimit(withValidation(rules)(handler), {
+// Rate limits first, then validate, then the handler:
+// - per IP: 20 failed logins / 15 min over all emails (successes don't count
+//   and don't clear it). Checked first, so a blocked client creates no
+//   per-email buckets.
+// - per IP + email: 5 failed / 15 min; a successful login clears it.
+const perEmail = withRateLimit(withValidation(rules)(handler), {
   name: 'login',
   ...LOGIN_LIMIT,
   methods: ['POST'],
   resetOnSuccess: true,
   key: loginKey,
+});
+
+export default withRateLimit(perEmail, {
+  name: 'login-ip',
+  ...LOGIN_IP_LIMIT,
+  methods: ['POST'],
+  skipSuccessful: true,
 });

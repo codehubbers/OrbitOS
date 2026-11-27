@@ -9,7 +9,13 @@
 // several instances, swap `createMemoryStore` for a shared store (Redis
 // INCR + PEXPIRE gives the same fixed-window behaviour).
 
+import { isIPv6 } from 'net';
+
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+// Upper bound on buckets kept in memory. Past this, the oldest bucket is
+// dropped, so a flood of unique keys can't grow the process without limit.
+export const MAX_KEYS = 50000;
 
 /**
  * The client's IP address.
@@ -31,7 +37,32 @@ export function getClientIp(req) {
   return socketIp;
 }
 
-export function createMemoryStore({ now = () => Date.now() } = {}) {
+/**
+ * The rate-limit key for a client: its IP, with IPv6 addresses cut to their
+ * /64 prefix. One subscriber usually gets a whole /64, so keying on the full
+ * address would let a single client rotate through endless fresh buckets.
+ */
+export function clientKey(req) {
+  let ip = getClientIp(req);
+  if (ip.startsWith('::ffff:') && ip.includes('.')) return ip.slice(7);
+  if (!isIPv6(ip)) return ip;
+  ip = ip.split('%')[0];
+  const [head, tail = ''] = ip.split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = ip.includes('::')
+    ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right]
+    : left;
+  return `${groups
+    .slice(0, 4)
+    .map((g) => parseInt(g, 16).toString(16))
+    .join(':')}::/64`;
+}
+
+export function createMemoryStore({
+  now = () => Date.now(),
+  maxKeys = MAX_KEYS,
+} = {}) {
   const hits = new Map();
   let nextSweep = 0;
 
@@ -49,11 +80,17 @@ export function createMemoryStore({ now = () => Date.now() } = {}) {
       sweep(time);
       let entry = hits.get(key);
       if (!entry || entry.resetAt <= time) {
+        hits.delete(key);
+        if (hits.size >= maxKeys) hits.delete(hits.keys().next().value);
         entry = { count: 0, resetAt: time + windowMs };
         hits.set(key, entry);
       }
       entry.count += 1;
       return { count: entry.count, resetAt: entry.resetAt, now: time };
+    },
+    decrement(key) {
+      const entry = hits.get(key);
+      if (entry && entry.count > 0) entry.count -= 1;
     },
     reset(key) {
       hits.delete(key);
@@ -74,10 +111,14 @@ const defaultStore = createMemoryStore();
  * @param {string}   options.name        bucket name, e.g. 'login'
  * @param {number}   options.windowMs    window length in ms
  * @param {number}   options.max         requests allowed per window
- * @param {Function} [options.key]       (req) => string, defaults to client IP
+ * @param {Function} [options.key]       (req) => string, defaults to
+ *        clientKey (the client IP, IPv6 cut to its /64)
  * @param {boolean}  [options.resetOnSuccess]  clear the bucket when the
  *        handler answers < 400. Used for login, so only *failed* attempts
  *        count ("6th failed login in 15 min returns 429").
+ * @param {boolean}  [options.skipSuccessful]  don't count requests the
+ *        handler answers < 400, without clearing earlier failures. Used
+ *        for the per-IP login cap, which a single success must not reset.
  * @param {string[]} [options.methods]   only limit these methods
  * @param {object}   [options.store]     store override (tests)
  */
@@ -86,8 +127,9 @@ export function withRateLimit(handler, options) {
     name,
     windowMs,
     max,
-    key = getClientIp,
+    key = clientKey,
     resetOnSuccess = false,
+    skipSuccessful = false,
     methods,
     store = defaultStore,
   } = options;
@@ -113,7 +155,10 @@ export function withRateLimit(handler, options) {
     }
 
     const result = await handler(req, res);
-    if (resetOnSuccess && res.statusCode < 400) store.reset(bucket);
+    if (res.statusCode < 400) {
+      if (resetOnSuccess) store.reset(bucket);
+      else if (skipSuccessful) store.decrement(bucket);
+    }
     return result;
   };
 }
