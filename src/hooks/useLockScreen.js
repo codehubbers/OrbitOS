@@ -42,11 +42,17 @@ const writeLocked = (locked) => {
 // awkward to reach, so Cmd+Ctrl+L works there too. (Cmd+L alone is the
 // browser's address bar, so the modifier pair is required.)
 // Note: on macOS, Option+L types "¬", so event.key is unreliable for this
-// combo — fall back to the physical key code.
+// combo — fall back to the physical key code, but only when the key typed
+// is not a letter. On Windows AltGr is reported as Ctrl+Alt, and Polish,
+// Hungarian, Slovak... layouts type "ł" with AltGr+L; other layouts (Dvorak)
+// put a different letter on the KeyL position. Those must not lock.
+const LETTER = /^\p{L}$/u;
 export const isLockShortcut = (event) => {
   const modifiers =
     event.ctrlKey && (event.altKey || event.metaKey) && !event.shiftKey;
-  const isL = event.key?.toLowerCase() === 'l' || event.code === 'KeyL';
+  const key = event.key || '';
+  const isL =
+    key.toLowerCase() === 'l' || (event.code === 'KeyL' && !LETTER.test(key));
   return Boolean(modifiers && isL);
 };
 

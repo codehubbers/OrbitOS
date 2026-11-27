@@ -212,6 +212,17 @@ describe('useLockScreen', () => {
     ).toBe(true);
   });
 
+  it('ignores AltGr+L on layouts where it types a letter ("ł")', () => {
+    // Windows reports AltGr as Ctrl+Alt; Polish AltGr+L types "ł".
+    expect(
+      isLockShortcut({ ctrlKey: true, altKey: true, key: 'ł', code: 'KeyL' }),
+    ).toBe(false);
+    // Dvorak: the KeyL position types "n".
+    expect(
+      isLockShortcut({ ctrlKey: true, altKey: true, key: 'n', code: 'KeyL' }),
+    ).toBe(false);
+  });
+
   it('locks on the shortcut and survives a reload', () => {
     const { result } = renderHook(() => useLockScreen());
     expect(result.current.locked).toBe(false);
