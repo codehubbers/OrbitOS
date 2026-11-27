@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,25 +10,30 @@ import useWindowDrag from '@/hooks/useWindowDrag';
 import useWindowSnap from '@/hooks/useWindowSnap';
 import ResizeHandles from '@/system/components/ResizeHandles';
 import TabManagerService from '@/system/services/TabManagerService';
-import { TASKBAR_HEIGHT, SNAP_THRESHOLD } from '@/system/config/window';
+import { TASKBAR_HEIGHT } from '@/system/config/window';
 
 export default function Window({ app, children }) {
   const { state, dispatch } = useApp();
   const { theme } = useTheme();
-  const [isMaximized, setIsMaximized] = useState(false);
-  const savedState = useRef({ position: null, size: null });
 
-  // Find the group this window belongs to
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  const savedState = useRef({
+    position: null,
+    size: null,
+  });
+
+  // Find the group this window belongs to.
   const group = state.windowGroups.find((g) => g.windows.includes(app.id));
 
-  // If this window is in a group, don't show it as a separate window
+  // Grouped windows are rendered by the group manager instead.
   const isGrouped = group !== undefined;
 
-  // Initialize hooks
   const initialPosition = {
     x: 100 + Math.random() * 200,
     y: 100 + Math.random() * 100,
   };
+
   const initialSize = {
     width: 600,
     height: app.id === 'settings' ? 350 : 400,
@@ -55,12 +60,7 @@ export default function Window({ app, children }) {
       isMaximized,
     });
 
-  const {
-    isDragging,
-    handleMouseDown: dragMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-  } = useWindowDrag({
+  const { handleMouseDown: dragMouseDown } = useWindowDrag({
     app,
     position,
     size,
@@ -75,58 +75,101 @@ export default function Window({ app, children }) {
     updatePreviewFor,
   });
 
-  const handleMouseDown = (e) => {
-    dragMouseDown(e);
+  // Handle title bar dragging and activation.
+  const handleMouseDown = (event) => {
+    if (isMaximized && state.activeApp !== app.id) {
+      dispatch({
+        type: 'SET_ACTIVE_APP',
+        payload: app.id,
+      });
+    }
+
+    dragMouseDown(event);
+    event.stopPropagation();
   };
 
-  const handleResizeStart = (direction, e) => {
-    e.stopPropagation();
-    startResize(direction, e);
+  // Activate a window when its content is clicked.
+  const handleWindowContentMouseDown = () => {
+    if (state.activeApp !== app.id) {
+      dispatch({
+        type: 'SET_ACTIVE_APP',
+        payload: app.id,
+      });
+    }
+  };
+
+  // Activate the window before resizing.
+  const handleResizeStart = (direction, event) => {
+    if (state.activeApp !== app.id) {
+      dispatch({
+        type: 'SET_ACTIVE_APP',
+        payload: app.id,
+      });
+    }
+
+    event.stopPropagation();
+    startResize(direction, event);
   };
 
   const handleClose = () => {
     if (TabManagerService.isTabManager(app)) {
-      // For Tab Manager, use service to handle cleanup
-      const group = state.windowGroups.find((g) => g.id === app.groupId);
+      const targetGroup = state.windowGroups.find((g) => g.id === app.groupId);
+
       const actions = TabManagerService.handleTabManagerClose({
         appId: app.id,
         groupId: app.groupId,
-        group,
+        group: targetGroup,
         dispatch,
       });
 
-      // Dispatch all actions
       actions.forEach((action) => dispatch(action));
     } else {
-      // Regular app close
-      dispatch({ type: 'CLOSE_APP', payload: app.id });
+      dispatch({
+        type: 'CLOSE_APP',
+        payload: app.id,
+      });
     }
   };
 
   const handleMinimize = () => {
-    dispatch({ type: 'MINIMIZE_APP', payload: { appId: app.id } });
+    dispatch({
+      type: 'MINIMIZE_APP',
+      payload: {
+        appId: app.id,
+      },
+    });
   };
 
   const handleToggleAlwaysOnTop = () => {
-    dispatch({ type: 'TOGGLE_ALWAYS_ON_TOP', payload: { appId: app.id } });
+    dispatch({
+      type: 'TOGGLE_ALWAYS_ON_TOP',
+      payload: {
+        appId: app.id,
+      },
+    });
   };
 
   const handleToggleMaximize = () => {
     if (isMaximized) {
-      // Restore window
+      // Restore the previous window dimensions and position.
       if (
         savedState.current &&
         savedState.current.size &&
         savedState.current.position
       ) {
         clearPreview();
+
         updateWindow(savedState.current.size, savedState.current.position);
+
         setIsMaximized(false);
       }
     } else {
-      // Maximize window
+      // Save the current window state.
       savedState.current = {
-        position: { x: Math.round(position.x), y: Math.round(position.y) },
+        position: {
+          x: Math.round(position.x),
+          y: Math.round(position.y),
+        },
         size: {
           width: Math.round(size.width),
           height: Math.round(size.height),
@@ -137,24 +180,43 @@ export default function Window({ app, children }) {
         width: window.innerWidth,
         height: window.innerHeight - TASKBAR_HEIGHT,
       };
-      const maximizedPosition = { x: 0, y: 0 };
+
+      const maximizedPosition = {
+        x: 0,
+        y: 0,
+      };
+
       updateWindow(maximizedSize, maximizedPosition);
       setIsMaximized(true);
     }
   };
 
-  // Global event listeners are handled by the hooks
-
   return (
     <>
       <SnapPreview layout={snapPreview} />
+
       <AnimatePresence>
         {!app.isMinimized && !isGrouped && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0, y: 50 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0, y: 50 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            initial={{
+              scale: 0.8,
+              opacity: 0,
+              y: 50,
+            }}
+            animate={{
+              scale: 1,
+              opacity: 1,
+              y: 0,
+            }}
+            exit={{
+              scale: 0.8,
+              opacity: 0,
+              y: 50,
+            }}
+            transition={{
+              duration: 0.2,
+              ease: 'easeOut',
+            }}
             className={`absolute ${theme.window.bg} ${theme.window.border} border rounded-lg shadow-lg overflow-hidden`}
             style={{
               left: position.x,
@@ -164,10 +226,9 @@ export default function Window({ app, children }) {
               zIndex: app.alwaysOnTop ? 10000 + app.zIndex : app.zIndex,
             }}
           >
-            {/* Group Indicator */}
             {group && <WindowGroupIndicator window={app} group={group} />}
 
-            {/* Window Header */}
+            {/* Window title bar */}
             <WindowTitleBar
               app={app}
               theme={theme}
@@ -180,15 +241,19 @@ export default function Window({ app, children }) {
               onToggleAlwaysOnTop={handleToggleAlwaysOnTop}
             />
 
-            {/* Window Content */}
+            {/* Window content */}
             <div
               className={`flex-1 ${theme.window.content} ${theme.window.scrollbar}`}
-              style={{ height: 'calc(100% - 40px)', overflow: 'hidden' }}
+              style={{
+                height: 'calc(100% - 40px)',
+                overflow: 'hidden',
+              }}
+              onMouseDown={handleWindowContentMouseDown}
             >
               {children}
             </div>
 
-            {/* Resize Handles */}
+            {/* Window resize handles */}
             {!isMaximized && (
               <ResizeHandles
                 onResizeStart={handleResizeStart}
