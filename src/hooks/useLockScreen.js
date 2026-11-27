@@ -1,16 +1,25 @@
 // Lock screen state (#98).
 //
 // - lock() / unlock()
-// - Ctrl+Alt+L locks (browsers can't see Win+L: the OS handles it first)
+// - Ctrl+Alt+L locks (Cmd+Ctrl+L on Mac; browsers can't see Win+L: the
+//   OS handles it first)
 // - The locked state is kept in sessionStorage, so reloading the tab
 //   doesn't skip the lock screen.
-//
-// TODO(#98, help wanted): idle timeout. Lock after N minutes without
-// mouse/keyboard/touch activity, N from Settings (default 10, "Never" allowed).
+// - Idle timeout: lock after `idleMinutes` without mouse/keyboard/touch
+//   activity (from Settings → Security; 0 means "Never"). The countdown
+//   pauses while the screen is already locked.
 
 import { useCallback, useEffect, useState } from 'react';
 
 export const LOCK_STORAGE_KEY = 'orbitos-locked';
+export const DEFAULT_IDLE_MINUTES = 10;
+export const IDLE_ACTIVITY_EVENTS = [
+  'pointermove',
+  'pointerdown',
+  'keydown',
+  'touchstart',
+  'wheel',
+];
 
 const readLocked = () => {
   try {
@@ -29,14 +38,28 @@ const writeLocked = (locked) => {
   }
 };
 
-export const isLockShortcut = (event) =>
-  event.ctrlKey &&
-  event.altKey &&
-  !event.shiftKey &&
-  !event.metaKey &&
-  event.key?.toLowerCase() === 'l';
+// Ctrl+Alt+L on Windows/Linux; on a Mac keyboard Alt is Option, which is
+// awkward to reach, so Cmd+Ctrl+L works there too. (Cmd+L alone is the
+// browser's address bar, so the modifier pair is required.)
+// Note: on macOS, Option+L types "¬", so event.key is unreliable for this
+// combo — fall back to the physical key code, but only when the key typed
+// is not a letter. On Windows AltGr is reported as Ctrl+Alt, and Polish,
+// Hungarian, Slovak... layouts type "ł" with AltGr+L; other layouts (Dvorak)
+// put a different letter on the KeyL position. Those must not lock.
+const LETTER = /^\p{L}$/u;
+export const isLockShortcut = (event) => {
+  const modifiers =
+    event.ctrlKey && (event.altKey || event.metaKey) && !event.shiftKey;
+  const key = event.key || '';
+  const isL =
+    key.toLowerCase() === 'l' || (event.code === 'KeyL' && !LETTER.test(key));
+  return Boolean(modifiers && isL);
+};
 
-export default function useLockScreen({ enabled = true } = {}) {
+export default function useLockScreen({
+  enabled = true,
+  idleMinutes = DEFAULT_IDLE_MINUTES,
+} = {}) {
   const [locked, setLocked] = useState(false);
 
   // Read after mount so server and client render the same markup.
@@ -65,6 +88,41 @@ export default function useLockScreen({ enabled = true } = {}) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [enabled, lock]);
+
+  // Idle timeout: lock after `idleMinutes` without activity. Paused while
+  // already locked; 0 (or anything non-positive) means "Never".
+  useEffect(() => {
+    if (!enabled || locked) return undefined;
+    const minutes = Number(idleMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) return undefined;
+
+    let timer;
+    let lastArm = 0;
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(lock, minutes * 60 * 1000);
+    };
+    const onActivity = () => {
+      // Throttle: pointermove fires constantly, and re-arming a timeout
+      // more often than every few seconds buys nothing.
+      const now = Date.now();
+      if (now - lastArm < 5000) return;
+      lastArm = now;
+      arm();
+    };
+
+    lastArm = Date.now();
+    arm();
+    IDLE_ACTIVITY_EVENTS.forEach((type) =>
+      window.addEventListener(type, onActivity, { passive: true }),
+    );
+    return () => {
+      window.clearTimeout(timer);
+      IDLE_ACTIVITY_EVENTS.forEach((type) =>
+        window.removeEventListener(type, onActivity),
+      );
+    };
+  }, [enabled, locked, idleMinutes, lock]);
 
   return { locked, lock, unlock };
 }

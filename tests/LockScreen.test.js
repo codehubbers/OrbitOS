@@ -97,6 +97,15 @@ describe('POST /api/auth/verify-password', () => {
     expect(dbConnect).not.toHaveBeenCalled();
   });
 
+  it('unlocks the local dev admin with no password at all', async () => {
+    const { hasLocalAdminSession } = jest.requireMock('@/lib/auth');
+    hasLocalAdminSession.mockReturnValueOnce(true);
+    const res = response();
+    await verifyPassword(post({}), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+  });
+
   it('only accepts POST', async () => {
     const res = response();
     await verifyPassword({ method: 'GET', headers: {} }, res);
@@ -151,20 +160,66 @@ describe('LockScreen', () => {
     );
     expect(onUnlock).not.toHaveBeenCalled();
   });
+
+  it('lets the local dev admin unlock with Enter and no password field', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    const onUnlock = jest.fn();
+    const localAdmin = {
+      _id: '000000000000000000000000',
+      username: 'local-admin',
+      displayName: 'Local Admin',
+    };
+    render(<LockScreen user={localAdmin} onUnlock={onUnlock} />);
+
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Unlock' });
+    expect(button).toHaveFocus();
+    fireEvent.click(button);
+
+    await waitFor(() => expect(onUnlock).toHaveBeenCalled());
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/auth/verify-password',
+      expect.objectContaining({ body: JSON.stringify({}) }),
+    );
+  });
 });
 
 describe('useLockScreen', () => {
   beforeEach(() => window.sessionStorage.clear());
 
-  it('recognises Ctrl+Alt+L only', () => {
+  it('recognises Ctrl+Alt+L and the Mac alias Cmd+Ctrl+L', () => {
     expect(isLockShortcut({ ctrlKey: true, altKey: true, key: 'l' })).toBe(
+      true,
+    );
+    expect(isLockShortcut({ ctrlKey: true, metaKey: true, key: 'l' })).toBe(
       true,
     );
     expect(isLockShortcut({ ctrlKey: true, altKey: false, key: 'l' })).toBe(
       false,
     );
+    expect(isLockShortcut({ metaKey: true, key: 'l' })).toBe(false);
     expect(
       isLockShortcut({ ctrlKey: true, altKey: true, shiftKey: true, key: 'L' }),
+    ).toBe(false);
+  });
+
+  it('works when macOS turns Option+L into "¬" (falls back to key code)', () => {
+    expect(
+      isLockShortcut({ ctrlKey: true, altKey: true, key: '¬', code: 'KeyL' }),
+    ).toBe(true);
+    expect(
+      isLockShortcut({ ctrlKey: true, metaKey: true, key: '¬', code: 'KeyL' }),
+    ).toBe(true);
+  });
+
+  it('ignores AltGr+L on layouts where it types a letter ("ł")', () => {
+    // Windows reports AltGr as Ctrl+Alt; Polish AltGr+L types "ł".
+    expect(
+      isLockShortcut({ ctrlKey: true, altKey: true, key: 'ł', code: 'KeyL' }),
+    ).toBe(false);
+    // Dvorak: the KeyL position types "n".
+    expect(
+      isLockShortcut({ ctrlKey: true, altKey: true, key: 'n', code: 'KeyL' }),
     ).toBe(false);
   });
 
@@ -192,5 +247,59 @@ describe('useLockScreen', () => {
       fireEvent.keyDown(window, { key: 'l', ctrlKey: true, altKey: true });
     });
     expect(result.current.locked).toBe(false);
+  });
+});
+
+describe('useLockScreen idle timeout', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    window.sessionStorage.clear();
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it('locks after the configured idle time (default 10 min)', () => {
+    const { result } = renderHook(() => useLockScreen());
+    act(() => jest.advanceTimersByTime(10 * 60 * 1000 - 1000));
+    expect(result.current.locked).toBe(false);
+    act(() => jest.advanceTimersByTime(1000));
+    expect(result.current.locked).toBe(true);
+  });
+
+  it('activity resets the countdown', () => {
+    const { result } = renderHook(() => useLockScreen({ idleMinutes: 10 }));
+
+    act(() => jest.advanceTimersByTime(9 * 60 * 1000));
+    // 9 minutes in, the user moves the mouse — the countdown starts over.
+    // (The listener is throttled at 5s, and 9 minutes clears that easily.)
+    act(() => {
+      fireEvent.pointerDown(window);
+      jest.advanceTimersByTime(9 * 60 * 1000);
+    });
+    expect(result.current.locked).toBe(false);
+
+    act(() => jest.advanceTimersByTime(60 * 1000));
+    expect(result.current.locked).toBe(true);
+  });
+
+  it('never locks when idleMinutes is 0 ("Never" in Settings)', () => {
+    const { result } = renderHook(() => useLockScreen({ idleMinutes: 0 }));
+    act(() => jest.advanceTimersByTime(2 * 60 * 60 * 1000));
+    expect(result.current.locked).toBe(false);
+  });
+
+  it('stays idle (no double lock) while the screen is already locked', () => {
+    const { result } = renderHook(() => useLockScreen({ idleMinutes: 10 }));
+    act(() => result.current.lock());
+    // Time passes while locked; unlocking afterwards must not instantly
+    // re-lock from a stale timer.
+    act(() => jest.advanceTimersByTime(30 * 60 * 1000));
+    act(() => result.current.unlock());
+    expect(result.current.locked).toBe(false);
+    // The fresh countdown starts after the unlock.
+    act(() => jest.advanceTimersByTime(10 * 60 * 1000 - 1000));
+    expect(result.current.locked).toBe(false);
+    act(() => jest.advanceTimersByTime(1000));
+    expect(result.current.locked).toBe(true);
   });
 });

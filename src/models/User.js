@@ -52,6 +52,10 @@ const userSchema = new mongoose.Schema({
     sound: {
       startupSound: { type: Boolean, default: false },
     },
+    security: {
+      // Minutes of inactivity before the lock screen engages. 0 = never.
+      lockAfterMinutes: { type: Number, default: 10, min: 0 },
+    },
     weather: {
       unit: { type: String, enum: ['C', 'F'], default: 'C' },
       city: { type: String, trim: true, maxlength: 100 },

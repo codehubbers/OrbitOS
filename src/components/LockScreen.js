@@ -15,12 +15,19 @@ const formatDate = (date) =>
     day: 'numeric',
   });
 
+// The local dev admin (NEXT_PUBLIC_ENABLE_LOCAL_ADMIN on localhost) has no
+// password, so its lock screen unlocks with just Enter / a click.
+const LOCAL_ADMIN_ID = '000000000000000000000000';
+
 export default function LockScreen({ user, wallpaper, onUnlock }) {
   const [now, setNow] = useState(() => new Date());
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
   const inputRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  const isLocalAdmin = user?._id === LOCAL_ADMIN_ID;
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -28,14 +35,15 @@ export default function LockScreen({ user, wallpaper, onUnlock }) {
   }, []);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    (isLocalAdmin ? buttonRef : inputRef).current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const name = user?.displayName || user?.username || 'User';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!password || checking) return;
+    if ((!isLocalAdmin && !password) || checking) return;
     setChecking(true);
     setError('');
     try {
@@ -43,7 +51,7 @@ export default function LockScreen({ user, wallpaper, onUnlock }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(isLocalAdmin ? {} : { password }),
       });
       if (response.ok) {
         setPassword('');
@@ -61,7 +69,7 @@ export default function LockScreen({ user, wallpaper, onUnlock }) {
     } finally {
       setChecking(false);
       setPassword('');
-      inputRef.current?.focus();
+      (isLocalAdmin ? buttonRef : inputRef).current?.focus();
     }
   };
 
@@ -106,29 +114,45 @@ export default function LockScreen({ user, wallpaper, onUnlock }) {
           onSubmit={handleSubmit}
           className="flex flex-col items-center gap-2"
         >
-          <div className="flex gap-2">
-            <label htmlFor="lock-password" className="sr-only">
-              Password
-            </label>
-            <input
-              id="lock-password"
-              ref={inputRef}
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-              disabled={checking}
-              className="w-64 rounded-md bg-white/20 px-3 py-2 text-white placeholder-white/70 outline-none focus:ring-2 focus:ring-white/70"
-            />
-            <button
-              type="submit"
-              disabled={!password || checking}
-              className="rounded-md bg-white/25 px-4 py-2 hover:bg-white/35 disabled:opacity-50"
-            >
-              {checking ? 'Checking...' : 'Unlock'}
-            </button>
-          </div>
+          {isLocalAdmin ? (
+            <>
+              <button
+                ref={buttonRef}
+                type="submit"
+                disabled={checking}
+                className="rounded-md bg-white/25 px-6 py-2 hover:bg-white/35 disabled:opacity-50"
+              >
+                {checking ? 'Checking...' : 'Unlock'}
+              </button>
+              <p className="text-sm text-white/70">
+                Local dev admin — just press Enter
+              </p>
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <label htmlFor="lock-password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="lock-password"
+                ref={inputRef}
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Password"
+                disabled={checking}
+                className="w-64 rounded-md bg-white/20 px-3 py-2 text-white placeholder-white/70 outline-none focus:ring-2 focus:ring-white/70"
+              />
+              <button
+                type="submit"
+                disabled={!password || checking}
+                className="rounded-md bg-white/25 px-4 py-2 hover:bg-white/35 disabled:opacity-50"
+              >
+                {checking ? 'Checking...' : 'Unlock'}
+              </button>
+            </div>
+          )}
           {error && (
             <p role="alert" className="text-sm text-red-200">
               {error}

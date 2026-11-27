@@ -89,6 +89,40 @@ export default function SettingsApp() {
     }
   };
 
+  // "Lock after inactivity" preference (#98) — minutes, 0 means Never.
+  const [lockAfterSaving, setLockAfterSaving] = useState(false);
+  const [lockAfterError, setLockAfterError] = useState('');
+  const lockAfterMinutes = user?.preferences?.security?.lockAfterMinutes ?? 10;
+
+  const handleLockAfterChange = async (minutes) => {
+    setLockAfterSaving(true);
+    setLockAfterError('');
+    try {
+      const preferences = {
+        ...user?.preferences,
+        security: {
+          ...user?.preferences?.security,
+          lockAfterMinutes: minutes,
+        },
+      };
+      const res = await fetch('/api/users/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ preferences }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save the lock timeout preference.');
+      }
+      await refreshUser();
+    } catch (error) {
+      console.error(error);
+      setLockAfterError("Couldn't save this setting. Please try again.");
+    } finally {
+      setLockAfterSaving(false);
+    }
+  };
+
   return (
     <div
       className={`h-full ${theme.app.bg} ${theme.app.text} p-6 force-scrollbar`}
@@ -222,6 +256,37 @@ export default function SettingsApp() {
             {startupSoundError && (
               <p role="alert" className="text-sm text-red-500">
                 {startupSoundError}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* --- SECURITY SECTION --- */}
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Security</h3>
+          <div className={`p-4 rounded-lg space-y-3 ${theme.app.table}`}>
+            <div className="flex items-center justify-between">
+              <label className="font-medium" htmlFor="lock-after-select">
+                Lock after inactivity
+              </label>
+              <select
+                id="lock-after-select"
+                aria-label="Lock after inactivity"
+                value={String(lockAfterMinutes)}
+                disabled={lockAfterSaving}
+                onChange={(e) => handleLockAfterChange(Number(e.target.value))}
+                className={`border rounded px-2 py-1 ${theme.app.input}`}
+              >
+                <option value="5">5 minutes</option>
+                <option value="10">10 minutes</option>
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="0">Never</option>
+              </select>
+            </div>
+            {lockAfterError && (
+              <p role="alert" className="text-sm text-red-500">
+                {lockAfterError}
               </p>
             )}
           </div>
