@@ -151,6 +151,26 @@ describe('LockScreen', () => {
     );
     expect(onUnlock).not.toHaveBeenCalled();
   });
+
+  it('stays locked and shows an error for a too many attempts', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'Too many attempts' }),
+    });
+    const onUnlock = jest.fn();
+    render(<LockScreen user={user} onUnlock={onUnlock} />);
+
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'nope' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Too many attempts. Please wait and try again.',
+    );
+    expect(onUnlock).not.toHaveBeenCalled();
+  });
 });
 
 describe('useLockScreen', () => {
