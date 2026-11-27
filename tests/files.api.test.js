@@ -256,3 +256,19 @@ describe('GET /api/files error handling', () => {
     expect(res.status).toHaveBeenCalledWith(500);
   });
 });
+
+describe('POST /api/files id validation', () => {
+  it('rejects a file id that is not an ObjectId string', async () => {
+    const res = createResponse();
+    await filesHandler(
+      {
+        method: 'POST',
+        body: { id: { $ne: null }, content: 'x' },
+        headers: {},
+      },
+      res,
+    );
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid file id' });
+  });
+});
