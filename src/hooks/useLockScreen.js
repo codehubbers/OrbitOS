@@ -43,13 +43,12 @@ const writeLocked = (locked) => {
 // browser's address bar, so the modifier pair is required.)
 // Note: on macOS, Option+L types "¬", so event.key is unreliable for this
 // combo — fall back to the physical key code.
-export const isLockShortcut = (event) =>
-  Boolean(
-    event.ctrlKey &&
-      (event.altKey || event.metaKey) &&
-      !event.shiftKey &&
-      (event.key?.toLowerCase() === 'l' || event.code === 'KeyL'),
-  );
+export const isLockShortcut = (event) => {
+  const modifiers =
+    event.ctrlKey && (event.altKey || event.metaKey) && !event.shiftKey;
+  const isL = event.key?.toLowerCase() === 'l' || event.code === 'KeyL';
+  return Boolean(modifiers && isL);
+};
 
 export default function useLockScreen({
   enabled = true,
